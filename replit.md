@@ -119,6 +119,21 @@ The application follows a traditional Flask web application architecture with th
 - June 23, 2025. Converted from PostgreSQL to SQLite for simplified deployment
 - June 23, 2025. Implemented ML-based clause classification with LegalBERT integration and enhanced pattern fallback
 
+## Documentation
+
+**Comprehensive Documentation Created:**
+- **README.md**: Complete project overview with installation, architecture, and development guide
+- **CLI_DOCS.md**: Detailed CLI commands, system architecture diagrams, and troubleshooting guide
+
+The documentation includes:
+- In-depth analysis engine explanations with code examples
+- Complete API documentation with request/response formats
+- Performance monitoring and optimization guidelines
+- Detailed troubleshooting guide for common issues
+- System architecture diagrams and data flow charts
+- Database schema design and performance considerations
+- ML pipeline architecture with embedding generation details
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
