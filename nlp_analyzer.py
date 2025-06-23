@@ -408,64 +408,134 @@ class TOSAnalyzer:
         """Generate an executive summary of the analysis"""
         summary = {
             'overall_assessment': '',
-            'key_concerns': [],
-            'positive_aspects': [],
-            'recommendations': [],
-            'risk_level': 'low' if risk_score < 30 else 'medium' if risk_score < 70 else 'high'
+            'critical_issues': [],
+            'moderate_concerns': [],
+            'immediate_actions': [],
+            'next_steps': [],
+            'risk_level': 'low' if risk_score < 30 else 'medium' if risk_score < 70 else 'high',
+            'bottom_line': ''
         }
         
-        # Overall assessment
-        if risk_score >= 70:
-            summary['overall_assessment'] = "This document contains significant risks that could substantially limit your rights and expose you to potential harm. Exercise extreme caution before agreeing."
-        elif risk_score >= 40:
-            summary['overall_assessment'] = "This document has moderate risk levels with some concerning clauses. Review carefully and consider if the service value justifies the risks."
-        else:
-            summary['overall_assessment'] = "This document appears to have reasonable terms with minimal concerning elements. Risk levels are within acceptable ranges for most users."
+        # Risk severity mapping with user impact
+        risk_impacts = {
+            'data_sharing': {
+                'severity': 'critical',
+                'impact': 'Your personal data will be sold or shared with unknown third parties',
+                'action': 'DO NOT PROCEED unless you accept permanent loss of data privacy'
+            },
+            'arbitration_waiver': {
+                'severity': 'critical', 
+                'impact': 'You cannot sue this company in court, even for serious harm',
+                'action': 'STOP - You lose all legal recourse if something goes wrong'
+            },
+            'unilateral_changes': {
+                'severity': 'moderate',
+                'impact': 'Company can change rules anytime without asking your permission',
+                'action': 'Monitor for changes or set up alerts'
+            },
+            'account_suspension': {
+                'severity': 'moderate',
+                'impact': 'Company can ban you instantly without explanation or appeal',
+                'action': 'Ensure you have data backups before proceeding'
+            },
+            'broad_liability_waiver': {
+                'severity': 'moderate',
+                'impact': 'Company takes no responsibility if their service harms you',
+                'action': 'Consider if the risk is worth the service benefits'
+            }
+        }
         
-        # Key concerns
-        high_priority_risks = ['data_sharing', 'arbitration_waiver', 'unilateral_changes']
+        # Categorize issues by severity
         for risk_type, data in risk_breakdown.items():
-            if risk_type in high_priority_risks:
-                summary['key_concerns'].append(f"{data['description']} ({data['count']} instances)")
+            risk_info = risk_impacts.get(risk_type, {
+                'severity': 'moderate',
+                'impact': data['description'],
+                'action': 'Review this clause carefully'
+            })
+            
+            issue = {
+                'type': risk_type.replace('_', ' ').title(),
+                'count': data['count'],
+                'impact': risk_info['impact'],
+                'action': risk_info['action']
+            }
+            
+            if risk_info['severity'] == 'critical':
+                summary['critical_issues'].append(issue)
+            else:
+                summary['moderate_concerns'].append(issue)
         
+        # Dark pattern severity
+        critical_patterns = ['auto_renewal', 'hidden_costs']
         for pattern_type, data in dark_patterns.items():
-            if data['count'] > 2:  # Only flag patterns that appear frequently
-                summary['key_concerns'].append(f"Frequent use of {pattern_type.replace('_', ' ')} tactics ({data['count']} instances)")
+            if data['count'] > 1:
+                issue = {
+                    'type': pattern_type.replace('_', ' ').title(),
+                    'count': data['count'],
+                    'impact': f"Designed to trick you into {pattern_type.replace('_', ' ')}",
+                    'action': 'Be extra cautious - this is intentionally deceptive'
+                }
+                
+                if pattern_type in critical_patterns:
+                    summary['critical_issues'].append(issue)
+                else:
+                    summary['moderate_concerns'].append(issue)
         
-        # Positive aspects
-        for indicator_type, data in positive_indicators.items():
-            summary['positive_aspects'].append(f"{indicator_type.replace('_', ' ').title()} mentioned {data['count']} times")
+        # Generate overall assessment based on actual findings
+        critical_count = len(summary['critical_issues'])
+        moderate_count = len(summary['moderate_concerns'])
         
-        if transparency_score > 70:
-            summary['positive_aspects'].append("Document demonstrates good transparency practices")
-        
-        if readability_metrics['readability_score'] > 60:
-            summary['positive_aspects'].append("Document uses relatively clear language")
-        
-        # Recommendations
-        if risk_score >= 70:
-            summary['recommendations'].extend([
-                "Seek legal advice before agreeing to these terms",
-                "Consider alternative services with more user-friendly terms",
-                "Document any existing data you want to protect"
-            ])
-        elif risk_score >= 40:
-            summary['recommendations'].extend([
-                "Carefully review all flagged sections before agreeing",
-                "Understand what rights you're waiving",
-                "Consider setting up data export/backup procedures"
-            ])
+        if critical_count > 0:
+            summary['overall_assessment'] = f"DANGER: {critical_count} critical issue{'s' if critical_count != 1 else ''} found that could seriously harm you. This company is asking you to give up fundamental rights."
+            summary['bottom_line'] = "❌ DO NOT AGREE unless you fully understand and accept these major risks"
+        elif moderate_count > 2:
+            summary['overall_assessment'] = f"CAUTION: {moderate_count} concerning clauses found. This company prioritizes their protection over yours."
+            summary['bottom_line'] = "⚠️ PROCEED WITH CAUTION - Consider alternatives with better terms"
+        elif moderate_count > 0:
+            summary['overall_assessment'] = f"MIXED: {moderate_count} issue{'s' if moderate_count != 1 else ''} found, but within normal range for this type of service."
+            summary['bottom_line'] = "✓ ACCEPTABLE - Standard risks for this service type"
         else:
-            summary['recommendations'].extend([
-                "Standard precautions apply - review key sections",
-                "Keep records of the terms you've agreed to"
-            ])
+            summary['overall_assessment'] = "GOOD: No major red flags detected. This appears to be a user-friendly agreement."
+            summary['bottom_line'] = "✅ SAFE TO PROCEED - This company respects user rights"
         
+        # Immediate actions (what to do right now)
+        if critical_count > 0:
+            summary['immediate_actions'] = [
+                "STOP - Do not sign this agreement yet",
+                "Get legal advice if the service is essential to you", 
+                "Look for alternative services with better terms",
+                "Document what data you'll lose access to"
+            ]
+        elif moderate_count > 2:
+            summary['immediate_actions'] = [
+                "Read every flagged section in detail",
+                "Understand exactly what rights you're giving up",
+                "Set up data export/backup before agreeing",
+                "Check if you can negotiate better terms"
+            ]
+        else:
+            summary['immediate_actions'] = [
+                "Save a copy of these terms for your records",
+                "Review the flagged sections once more",
+                "Set calendar reminders to check for term changes"
+            ]
+        
+        # Next steps (ongoing protection)
         if 'arbitration_waiver' in risk_breakdown:
-            summary['recommendations'].append("Understand that you're waiving your right to sue in court")
-        
+            summary['next_steps'].append("Remember: You cannot sue in court if problems arise")
         if 'data_sharing' in risk_breakdown:
-            summary['recommendations'].append("Review privacy settings and opt-out options for data sharing")
+            summary['next_steps'].append("Check privacy settings immediately after signing up")
+        if 'unilateral_changes' in risk_breakdown:
+            summary['next_steps'].append("Set up Google Alerts for this company's policy changes")
+        if any('auto_renewal' in p for p in dark_patterns):
+            summary['next_steps'].append("Cancel subscription immediately if you ever want to stop")
+            
+        # Default next steps
+        summary['next_steps'].extend([
+            "Keep screenshots of the current terms",
+            "Monitor your account for unexpected changes",
+            "Know your cancellation process before you need it"
+        ])
         
         return summary
     
