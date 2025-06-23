@@ -81,7 +81,7 @@ class TOSAnalyzer {
             return;
         }
 
-        if (!allowedTypes.includes(file.type)) {
+        if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.txt') && !file.name.toLowerCase().endsWith('.pdf')) {
             this.showAlert('Invalid file type. Please upload a PDF or text file.', 'error');
             return;
         }

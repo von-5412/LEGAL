@@ -50,20 +50,30 @@ def upload_file():
             if filename.lower().endswith('.pdf'):
                 text = analyzer.extract_text_from_pdf(file_content)
             else:
-                text = file_content.decode('utf-8', errors='ignore')
+                try:
+                    text = file_content.decode('utf-8', errors='ignore')
+                except UnicodeDecodeError:
+                    try:
+                        text = file_content.decode('latin-1', errors='ignore')
+                    except:
+                        text = str(file_content, errors='ignore')
             
-            if not text.strip():
-                flash('Could not extract text from the file. Please check the file format.', 'error')
+            if not text or not text.strip():
+                flash('Could not extract text from the file. Please check the file format and ensure it contains readable text.', 'error')
                 return redirect(url_for('index'))
             
             # Analyze the text
             analysis_data = analyzer.analyze_text(text)
             
+            if not analysis_data:
+                flash('Analysis failed. Please try again with a different file.', 'error')
+                return redirect(url_for('index'))
+            
             # Save analysis to database
             analysis_result = AnalysisResult(
                 filename=filename,
                 file_hash=file_hash,
-                risk_score=analysis_data['risk_score']
+                risk_score=analysis_data.get('risk_score', 0)
             )
             analysis_result.set_analysis_data(analysis_data)
             
@@ -74,8 +84,8 @@ def upload_file():
             return redirect(url_for('results', analysis_id=analysis_result.id))
             
         except Exception as e:
-            logging.error(f"Error processing file: {e}")
-            flash('Error processing file. Please try again.', 'error')
+            logging.error(f"Error processing file: {e}", exc_info=True)
+            flash(f'Error processing file: {str(e)}. Please try again.', 'error')
             return redirect(url_for('index'))
     else:
         flash('Invalid file type. Please upload a PDF or text file.', 'error')

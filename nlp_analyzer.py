@@ -141,7 +141,7 @@ class TOSAnalyzer:
             if is_header and current_chunk.strip():
                 chunks.append({
                     'text': current_chunk.strip(),
-                    'start_pos': len('\n'.join(chunks)) if chunks else 0
+                    'start_pos': sum(len(c['text']) for c in chunks) if chunks else 0
                 })
                 current_chunk = line + '\n'
             else:
@@ -151,7 +151,7 @@ class TOSAnalyzer:
         if current_chunk.strip():
             chunks.append({
                 'text': current_chunk.strip(),
-                'start_pos': len('\n'.join([c['text'] for c in chunks]))
+                'start_pos': sum(len(c['text']) for c in chunks) if chunks else 0
             })
         
         return chunks if chunks else [{'text': text, 'start_pos': 0}]
