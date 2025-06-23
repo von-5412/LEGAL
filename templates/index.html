@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2 class="mb-3">
+                <i class="fas fa-cloud-upload-alt"></i>
+                Upload Terms of Service Document
+            </h2>
+            <p class="text-muted mb-4">
+                Upload a PDF or text file to analyze for legal risks and manipulative language patterns.
+                All processing is done locally on this server - your documents are never sent to external services.
+            </p>
+
+            <form id="upload-form" method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
+                <div id="upload-zone" class="upload-zone">
+                    <div class="upload-text">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <h3>Drag & drop your document here</h3>
+                        <p>or click to browse files</p>
+                        <p class="small text-muted">
+                            Supported formats: PDF, TXT • Maximum size: 16MB
+                        </p>
+                    </div>
+                    <input type="file" id="file-input" name="file" accept=".pdf,.txt" style="display: none;">
+                </div>
+            </form>
+        </div>
+
+        <!-- Features Overview -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="analysis-card">
+                    <h3>
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        Risk Detection
+                    </h3>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i> Data sharing clauses</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Arbitration waivers</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Unilateral changes</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Account suspension terms</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Liability limitations</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="analysis-card">
+                    <h3>
+                        <i class="fas fa-eye text-warning"></i>
+                        Dark Pattern Detection
+                    </h3>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i> Urgency pressure tactics</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Hidden costs</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Confusing language</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Difficult opt-out processes</li>
+                        <li><i class="fas fa-check text-success me-2"></i> Consent manipulation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Recent Analyses -->
+        {% if recent_analyses %}
+        <div class="analysis-card">
+            <h3>
+                <i class="fas fa-history"></i>
+                Recent Analyses
+            </h3>
+            {% for analysis in recent_analyses %}
+            <a href="{{ url_for('results', analysis_id=analysis.id) }}" class="recent-item">
+                <div class="recent-item-info">
+                    <h4>{{ analysis.filename }}</h4>
+                    <p>{{ analysis.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                </div>
+                <div class="recent-item-score">
+                    <span class="score-badge {{ 'low' if analysis.risk_score < 30 else 'medium' if analysis.risk_score < 70 else 'high' }}">
+                        {{ analysis.risk_score }}
+                    </span>
+                </div>
+            </a>
+            {% endfor %}
+            
+            {% if recent_analyses|length >= 5 %}
+            <div class="text-center mt-3">
+                <a href="{{ url_for('history') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-list"></i> View All Analyses
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- How It Works -->
+        <div class="analysis-card">
+            <h3>
+                <i class="fas fa-info-circle"></i>
+                How It Works
+            </h3>
+            <div class="steps">
+                <div class="step mb-3">
+                    <div class="d-flex align-items-start">
+                        <div class="step-number bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-size: 0.9rem;">1</div>
+                        <div>
+                            <strong>Upload Document</strong>
+                            <p class="text-muted small mb-0">Upload your Terms of Service document (PDF or text)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="step mb-3">
+                    <div class="d-flex align-items-start">
+                        <div class="step-number bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-size: 0.9rem;">2</div>
+                        <div>
+                            <strong>Local Processing</strong>
+                            <p class="text-muted small mb-0">Text is analyzed using local NLP patterns and regex matching</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="step mb-3">
+                    <div class="d-flex align-items-start">
+                        <div class="step-number bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-size: 0.9rem;">3</div>
+                        <div>
+                            <strong>Risk Assessment</strong>
+                            <p class="text-muted small mb-0">Get detailed risk scores and dark pattern detection</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="d-flex align-items-start">
+                        <div class="step-number bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-size: 0.9rem;">4</div>
+                        <div>
+                            <strong>Detailed Report</strong>
+                            <p class="text-muted small mb-0">View comprehensive analysis with actionable insights</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacy Notice -->
+        <div class="analysis-card bg-light">
+            <h4 class="text-success">
+                <i class="fas fa-lock"></i>
+                Privacy & Security
+            </h4>
+            <p class="small text-muted mb-2">
+                <i class="fas fa-check-circle text-success me-1"></i>
+                All analysis performed locally on this server
+            </p>
+            <p class="small text-muted mb-2">
+                <i class="fas fa-check-circle text-success me-1"></i>
+                No external API calls or data transmission
+            </p>
+            <p class="small text-muted mb-0">
+                <i class="fas fa-check-circle text-success me-1"></i>
+                Your documents remain private and secure
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

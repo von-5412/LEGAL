@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Results - {{ analysis.filename }} - TOS Analyzer{% endblock %}
+
+{% block content %}
+<div class="results-page">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>
+                        <i class="fas fa-file-alt"></i>
+                        {{ analysis.filename }}
+                    </h2>
+                    <p class="text-muted">
+                        Analyzed on {{ analysis.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus"></i> Analyze Another Document
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Score Overview -->
+    <div class="row mb-4">
+        <div class="col-lg-4">
+            <div class="analysis-card text-center">
+                <h3>Overall Risk Score</h3>
+                <div class="risk-score-circle {{ 'risk-low' if analysis.risk_score < 30 else 'risk-medium' if analysis.risk_score < 70 else 'risk-high' }}" 
+                     data-score="{{ analysis.risk_score }}">
+                    {{ analysis.risk_score }}
+                </div>
+                <div class="risk-label">
+                    {{ 'Low Risk' if analysis.risk_score < 30 else 'Medium Risk' if analysis.risk_score < 70 else 'High Risk' }}
+                </div>
+                <p class="text-muted small mt-2">
+                    Based on {{ analysis_data.total_flags }} detected issues across {{ analysis_data.chunk_count }} document sections
+                </p>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="analysis-card text-center">
+                <h3>Transparency Score</h3>
+                <div class="display-4 mb-2" style="color: {{ '#059669' if analysis_data.transparency_score > 70 else '#D97706' if analysis_data.transparency_score > 40 else '#DC2626' }};">
+                    {{ analysis_data.transparency_score }}%
+                </div>
+                <div class="transparency-meter">
+                    <div class="transparency-fill" data-score="{{ analysis_data.transparency_score }}"></div>
+                </div>
+                <p class="text-muted small">
+                    Document clarity and user-friendliness rating
+                </p>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="analysis-card">
+                <h3>Quick Stats</h3>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h4 text-danger">{{ analysis_data.risk_breakdown|length }}</div>
+                        <small class="text-muted">Risk Categories</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-warning">{{ analysis_data.dark_patterns|length }}</div>
+                        <small class="text-muted">Dark Patterns</small>
+                    </div>
+                </div>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="h4 text-info">{{ analysis_data.flagged_sections|length }}</div>
+                        <small class="text-muted">Flagged Sections</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-secondary">{{ "%.1f"|format(analysis_data.text_length / 1000) }}K</div>
+                        <small class="text-muted">Characters</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Details -->
+    <div class="row">
+        <div class="col-lg-6">
+            <!-- Risk Breakdown -->
+            <div class="analysis-card">
+                <h3>
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    Risk Breakdown
+                </h3>
+                
+                {% if analysis_data.risk_breakdown %}
+                    <div class="chart-container mb-3">
+                        <canvas id="breakdown-chart" 
+                                data-risks='{{ analysis_data.risk_breakdown|tojson }}'></canvas>
+                    </div>
+                    
+                    {% for category, data in analysis_data.risk_breakdown.items() %}
+                    <div class="risk-item">
+                        <div class="risk-item-info">
+                            <h4>{{ category.replace('_', ' ').title() }}</h4>
+                            <p>{{ data.description }}</p>
+                            <small class="text-muted">{{ data.count }} occurrence{{ 's' if data.count != 1 else '' }}</small>
+                        </div>
+                        <div class="risk-item-score">
+                            {{ data.count * data.weight if (data.count * data.weight) <= data.weight else data.weight }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h4>No Major Risks Detected</h4>
+                        <p>This document appears to have standard terms without major red flags.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Dark Patterns -->
+            <div class="analysis-card">
+                <h3>
+                    <i class="fas fa-eye text-warning"></i>
+                    Dark Patterns Detected
+                </h3>
+                
+                {% if analysis_data.dark_patterns %}
+                    <div class="chart-container mb-3">
+                        <canvas id="dark-patterns-chart" 
+                                data-patterns='{{ analysis_data.dark_patterns|tojson }}'></canvas>
+                    </div>
+                    
+                    {% for pattern_type, data in analysis_data.dark_patterns.items() %}
+                    <div class="dark-pattern-item">
+                        <h4>{{ pattern_type.replace('_', ' ').title() }}</h4>
+                        <p class="small text-muted mb-1">
+                            {{ data.count }} instance{{ 's' if data.count != 1 else '' }} found
+                        </p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-success py-4">
+                        <i class="fas fa-shield-check fa-3x mb-3"></i>
+                        <h4>No Dark Patterns Found</h4>
+                        <p>This document doesn't appear to use manipulative language patterns.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <!-- Flagged Sections -->
+            <div class="analysis-card">
+                <h3>
+                    <i class="fas fa-flag text-danger"></i>
+                    Flagged Sections
+                </h3>
+                
+                {% if analysis_data.flagged_sections %}
+                    <p class="text-muted mb-3">
+                        The following sections contain potentially problematic clauses:
+                    </p>
+                    
+                    {% for section in analysis_data.flagged_sections %}
+                    <div class="flagged-section">
+                        <div class="flagged-section-header">
+                            <h4 class="mb-0">Section {{ loop.index }}</h4>
+                            <span class="flag-count">{{ section.flag_count }} issue{{ 's' if section.flag_count != 1 else '' }}</span>
+                        </div>
+                        
+                        <div class="section-text">{{ section.text }}</div>
+                        
+                        <div class="flagged-section-content">
+                            <h5 class="h6 mb-2">Issues Found:</h5>
+                            <ul class="flag-list">
+                                {% for flag in section.flags %}
+                                <li class="flag-item {{ flag.type }}">
+                                    <strong>{{ flag.category.replace('_', ' ').title() }}:</strong>
+                                    {{ flag.description }}
+                                    {% if flag.text %}
+                                    <div class="small text-muted mt-1">
+                                        <em>"{{ flag.text[:100] }}{{ '...' if flag.text|length > 100 else '' }}"</em>
+                                    </div>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-success py-4">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <h4>No Sections Flagged</h4>
+                        <p>All sections appear to contain standard language.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="analysis-card">
+                <h3>
+                    <i class="fas fa-lightbulb text-info"></i>
+                    Recommendations
+                </h3>
+                
+                <div class="row">
+                    {% if analysis.risk_score >= 70 %}
+                    <div class="col-lg-6">
+                        <div class="alert alert-danger">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                High Risk Detected
+                            </h5>
+                            <p>This document contains several concerning clauses that may significantly limit your rights or expose you to risks.</p>
+                            <ul class="mb-0">
+                                <li>Consider seeking legal advice before agreeing</li>
+                                <li>Look for alternative services with better terms</li>
+                                <li>Pay special attention to arbitration and liability clauses</li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% elif analysis.risk_score >= 40 %}
+                    <div class="col-lg-6">
+                        <div class="alert alert-warning">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Moderate Risk Detected
+                            </h5>
+                            <p>This document has some concerning elements but is within acceptable ranges for most services.</p>
+                            <ul class="mb-0">
+                                <li>Review flagged sections carefully</li>
+                                <li>Understand what rights you're waiving</li>
+                                <li>Consider if the service value justifies the risks</li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-lg-6">
+                        <div class="alert alert-success">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-check-circle"></i>
+                                Low Risk Detected
+                            </h5>
+                            <p>This document appears to have reasonable terms with minimal concerning clauses.</p>
+                            <ul class="mb-0">
+                                <li>Terms appear to be user-friendly</li>
+                                <li>Standard protections seem to be in place</li>
+                                <li>Risk level is acceptable for most users</li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="col-lg-6">
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-info-circle"></i>
+                                General Advice
+                            </h5>
+                            <p>Always remember when reviewing terms of service:</p>
+                            <ul class="mb-0">
+                                <li>Read sections that affect your data and privacy</li>
+                                <li>Understand termination and dispute resolution processes</li>
+                                <li>Keep records of terms you've agreed to</li>
+                                <li>Check for update policies and notification methods</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize charts and animations when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate transparency score
+    setTimeout(function() {
+        const fill = document.querySelector('.transparency-fill');
+        if (fill) {
+            const score = parseInt(fill.dataset.score);
+            fill.style.width = score + '%';
+        }
+    }, 500);
+});
+</script>
+{% endblock %}

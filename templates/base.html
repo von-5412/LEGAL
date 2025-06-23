@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TOS Analyzer - Legal Document Risk Assessment{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="main-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1>
+                        <i class="fas fa-shield-alt"></i>
+                        TOS Analyzer
+                    </h1>
+                    <p class="mb-0">
+                        Analyze Terms of Service for risks and dark patterns using local NLP processing
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <nav>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-history"></i> History
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container-fluid">
+        <!-- Flash Messages -->
+        <div id="alert-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mt-5 py-4 bg-white border-top">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="text-muted mb-0">
+                        © 2025 TOS Analyzer. All analysis performed locally using open-source NLP.
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-shield-check"></i>
+                        Your documents are processed securely and privately
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/analyzer.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
