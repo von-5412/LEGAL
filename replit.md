@@ -70,7 +70,7 @@ The application follows a traditional Flask web application architecture with th
 - **Werkzeug 3.1.3**: File upload utilities
 
 ### Database & Deployment
-- **psycopg2-binary 2.9.10**: PostgreSQL adapter
+- **SQLite**: Local database for development and production
 - **Gunicorn 23.0.0**: WSGI server for production
 
 ### Utilities
@@ -84,14 +84,14 @@ The application follows a traditional Flask web application architecture with th
 - File-based session storage
 
 ### Production (Replit)
-- **Database**: PostgreSQL via DATABASE_URL environment variable
+- **Database**: SQLite for reliable local storage
 - **Web Server**: Gunicorn with autoscale deployment target
-- **Process Management**: Connection pooling with 300-second recycle time
+- **Process Management**: Connection pooling with health checks
 - **File Storage**: Local uploads directory with .gitkeep
 - **Environment**: Python 3.11 with Nix package management
 
 ### Configuration
-- Environment-based configuration for database URLs and secrets
+- SQLite database configuration for portable deployment
 - Proxy-aware setup for deployment behind load balancers
 - Configurable upload limits and file type restrictions
 
@@ -116,6 +116,7 @@ The application follows a traditional Flask web application architecture with th
 
 ## Changelog
 - June 23, 2025. Initial setup and enhanced analysis features
+- June 23, 2025. Converted from PostgreSQL to SQLite for simplified deployment
 
 ## User Preferences
 

@@ -22,10 +22,9 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
-# Configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///tos_analyzer.db")
+# Configure the database - using SQLite for local storage
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///tos_analyzer.db"
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
     "pool_pre_ping": True,
 }
 
