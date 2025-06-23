@@ -95,8 +95,27 @@ The application follows a traditional Flask web application architecture with th
 - Proxy-aware setup for deployment behind load balancers
 - Configurable upload limits and file type restrictions
 
+## Recent Enhancements
+
+**June 23, 2025 - Enhanced Analysis Features:**
+- Added executive summary with intelligent risk assessment
+- Implemented positive indicator detection for good practices
+- Created readability scoring with legal jargon analysis
+- Built comparison dashboard with industry benchmarks
+- Added data export functionality (JSON format)
+- Enhanced dark pattern detection with 6 categories
+- Improved transparency scoring with positive practice bonuses
+
+**Advanced Analysis Features:**
+- **Executive Summary**: AI-generated assessment with key concerns and recommendations
+- **Positive Indicators**: Detection of user-friendly practices (data rights, transparency, security)
+- **Readability Metrics**: Word count, sentence complexity, legal jargon analysis
+- **Industry Benchmarks**: Compare documents against analyzed dataset averages
+- **Enhanced Dark Patterns**: Auto-renewal, data harvesting, opt-out difficulty detection
+- **Export Capabilities**: Structured JSON export with metadata and analysis results
+
 ## Changelog
-- June 23, 2025. Initial setup
+- June 23, 2025. Initial setup and enhanced analysis features
 
 ## User Preferences
 

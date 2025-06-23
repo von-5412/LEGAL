@@ -26,6 +26,98 @@
         </div>
     </div>
 
+    <!-- Executive Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="analysis-card">
+                <h3>
+                    <i class="fas fa-chart-line text-primary"></i>
+                    Executive Summary
+                </h3>
+                
+                <div class="row">
+                    <div class="col-lg-8">
+                        {% if analysis_data.executive_summary %}
+                        <div class="alert alert-{{ 'danger' if analysis_data.executive_summary.risk_level == 'high' else 'warning' if analysis_data.executive_summary.risk_level == 'medium' else 'success' }}">
+                            <h5 class="alert-heading mb-2">Overall Assessment</h5>
+                            <p class="mb-0">{{ analysis_data.executive_summary.overall_assessment }}</p>
+                        </div>
+                        
+                        {% if analysis_data.executive_summary.key_concerns %}
+                        <div class="mb-3">
+                            <h6><i class="fas fa-exclamation-triangle text-danger me-2"></i>Key Concerns</h6>
+                            <ul class="list-unstyled ms-3">
+                                {% for concern in analysis_data.executive_summary.key_concerns %}
+                                <li><i class="fas fa-chevron-right text-danger me-2"></i>{{ concern }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        {% if analysis_data.executive_summary.positive_aspects %}
+                        <div class="mb-3">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Positive Aspects</h6>
+                            <ul class="list-unstyled ms-3">
+                                {% for aspect in analysis_data.executive_summary.positive_aspects %}
+                                <li><i class="fas fa-chevron-right text-success me-2"></i>{{ aspect }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading mb-2">Analysis Summary</h5>
+                            <p class="mb-0">
+                                {% if analysis.risk_score >= 70 %}
+                                This document contains significant risks. Review carefully before agreeing to these terms.
+                                {% elif analysis.risk_score >= 40 %}
+                                This document has moderate risk levels. Consider the trade-offs before proceeding.
+                                {% else %}
+                                This document appears to have reasonable terms with minimal concerning elements.
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        {% if analysis_data.executive_summary %}
+                        <div class="card border-{{ 'danger' if analysis_data.executive_summary.risk_level == 'high' else 'warning' if analysis_data.executive_summary.risk_level == 'medium' else 'success' }}">
+                            <div class="card-header bg-{{ 'danger' if analysis_data.executive_summary.risk_level == 'high' else 'warning' if analysis_data.executive_summary.risk_level == 'medium' else 'success' }} text-white">
+                                <h6 class="mb-0">Quick Recommendations</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    {% for recommendation in analysis_data.executive_summary.recommendations %}
+                                    <li class="small mb-2">
+                                        <i class="fas fa-lightbulb text-{{ 'danger' if analysis_data.executive_summary.risk_level == 'high' else 'warning' if analysis_data.executive_summary.risk_level == 'medium' else 'success' }} me-1"></i>
+                                        {{ recommendation }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="card border-{{ 'danger' if analysis.risk_score >= 70 else 'warning' if analysis.risk_score >= 40 else 'success' }}">
+                            <div class="card-header bg-{{ 'danger' if analysis.risk_score >= 70 else 'warning' if analysis.risk_score >= 40 else 'success' }} text-white">
+                                <h6 class="mb-0">Actions & Export</h6>
+                            </div>
+                            <div class="card-body">
+                                <a href="{{ url_for('export_analysis', analysis_id=analysis.id) }}" class="btn btn-outline-primary btn-sm mb-2 w-100">
+                                    <i class="fas fa-download"></i> Export Analysis
+                                </a>
+                                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="fas fa-plus"></i> Analyze Another
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Risk Score Overview -->
     <div class="row mb-4">
         <div class="col-lg-4">
@@ -59,7 +151,7 @@
         </div>
         <div class="col-lg-4">
             <div class="analysis-card">
-                <h3>Quick Stats</h3>
+                <h3>Document Metrics</h3>
                 <div class="row text-center">
                     <div class="col-6">
                         <div class="h4 text-danger">{{ analysis_data.risk_breakdown|length }}</div>
@@ -72,12 +164,25 @@
                 </div>
                 <div class="row text-center mt-3">
                     <div class="col-6">
-                        <div class="h4 text-info">{{ analysis_data.flagged_sections|length }}</div>
-                        <small class="text-muted">Flagged Sections</small>
+                        <div class="h4 text-success">{{ analysis_data.positive_indicators|length }}</div>
+                        <small class="text-muted">Good Practices</small>
                     </div>
                     <div class="col-6">
-                        <div class="h4 text-secondary">{{ "%.1f"|format(analysis_data.text_length / 1000) }}K</div>
-                        <small class="text-muted">Characters</small>
+                        <div class="h4 text-info">{{ analysis_data.readability_score }}%</div>
+                        <small class="text-muted">Readability</small>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-top">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="small text-muted">{{ analysis_data.word_count }} words</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted">{{ analysis_data.avg_sentence_length }} avg/sentence</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="small text-muted">{{ analysis_data.complex_words_ratio }}% complex</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -150,6 +255,32 @@
                     </div>
                 {% endif %}
             </div>
+
+            <!-- Positive Indicators -->
+            {% if analysis_data.positive_indicators %}
+            <div class="analysis-card">
+                <h3>
+                    <i class="fas fa-thumbs-up text-success"></i>
+                    Good Practices Found
+                </h3>
+                
+                {% for indicator_type, data in analysis_data.positive_indicators.items() %}
+                <div class="positive-indicator-item">
+                    <h4>{{ indicator_type.replace('_', ' ').title() }}</h4>
+                    <p class="small text-muted mb-1">
+                        {{ data.count }} positive indication{{ 's' if data.count != 1 else '' }} found
+                    </p>
+                </div>
+                {% endfor %}
+                
+                <div class="alert alert-success mt-3">
+                    <small>
+                        <i class="fas fa-info-circle"></i>
+                        These practices demonstrate user-friendly and transparent policies.
+                    </small>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div class="col-lg-6">

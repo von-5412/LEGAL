@@ -236,6 +236,21 @@ h1, h2, h3, h4, h5, h6 {
     text-transform: capitalize;
 }
 
+/* Positive Indicators */
+.positive-indicator-item {
+    background: #ECFDF5;
+    border-left: 4px solid var(--color-secondary);
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+}
+
+.positive-indicator-item h4 {
+    color: var(--color-secondary);
+    font-size: 0.9rem;
+    text-transform: capitalize;
+}
+
 /* Flagged Sections */
 .flagged-section {
     background: #FEF2F2;

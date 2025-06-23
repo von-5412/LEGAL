@@ -1,6 +1,7 @@
 import os
 import logging
 from flask import render_template, request, redirect, url_for, flash, jsonify
+from datetime import datetime
 from werkzeug.utils import secure_filename
 from app import app, db
 from models import AnalysisResult
@@ -114,6 +115,69 @@ def api_analysis(analysis_id):
         'created_at': analysis.created_at.isoformat(),
         'analysis_data': analysis_data
     })
+
+@app.route('/export/<int:analysis_id>')
+def export_analysis(analysis_id):
+    """Export analysis results as JSON"""
+    analysis = AnalysisResult.query.get_or_404(analysis_id)
+    analysis_data = analysis.get_analysis_data()
+    
+    export_data = {
+        'document_info': {
+            'filename': analysis.filename,
+            'analyzed_at': analysis.created_at.isoformat(),
+            'file_hash': analysis.file_hash
+        },
+        'risk_assessment': {
+            'overall_risk_score': analysis.risk_score,
+            'transparency_score': analysis_data.get('transparency_score', 0),
+            'readability_score': analysis_data.get('readability_score', 0)
+        },
+        'detailed_analysis': analysis_data,
+        'export_info': {
+            'exported_at': datetime.utcnow().isoformat(),
+            'version': '1.0',
+            'analyzer': 'TOS Analyzer - Local NLP Processing'
+        }
+    }
+    
+    response = jsonify(export_data)
+    response.headers['Content-Disposition'] = f'attachment; filename={analysis.filename}_analysis.json'
+    return response
+
+@app.route('/compare')
+def compare_analyses():
+    """Compare multiple analyses"""
+    analyses = AnalysisResult.query.order_by(AnalysisResult.created_at.desc()).limit(10).all()
+    
+    # Calculate industry benchmarks
+    if analyses:
+        risk_scores = [a.risk_score for a in analyses]
+        avg_risk = sum(risk_scores) / len(risk_scores)
+        
+        transparency_scores = []
+        readability_scores = []
+        
+        for analysis in analyses:
+            data = analysis.get_analysis_data()
+            transparency_scores.append(data.get('transparency_score', 0))
+            readability_scores.append(data.get('readability_score', 0))
+        
+        benchmarks = {
+            'average_risk_score': round(avg_risk, 1),
+            'average_transparency': round(sum(transparency_scores) / len(transparency_scores), 1),
+            'average_readability': round(sum(readability_scores) / len(readability_scores), 1),
+            'total_documents': len(analyses)
+        }
+    else:
+        benchmarks = {
+            'average_risk_score': 0,
+            'average_transparency': 0,
+            'average_readability': 0,
+            'total_documents': 0
+        }
+    
+    return render_template('compare.html', analyses=analyses, benchmarks=benchmarks)
 
 @app.route('/history')
 def history():
