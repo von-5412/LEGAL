@@ -117,6 +117,7 @@ The application follows a traditional Flask web application architecture with th
 ## Changelog
 - June 23, 2025. Initial setup and enhanced analysis features
 - June 23, 2025. Converted from PostgreSQL to SQLite for simplified deployment
+- June 23, 2025. Implemented ML-based clause classification with LegalBERT integration and enhanced pattern fallback
 
 ## User Preferences
 

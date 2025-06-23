@@ -4,9 +4,12 @@ from typing import Dict, List, Tuple
 import hashlib
 import PyPDF2
 from io import BytesIO
+from ml_analyzer import LegalMLAnalyzer
 
 class TOSAnalyzer:
     def __init__(self):
+        # Initialize ML analyzer
+        self.ml_analyzer = LegalMLAnalyzer()
         # Risk patterns with weights
         self.risk_patterns = {
             'data_sharing': {
@@ -230,6 +233,9 @@ class TOSAnalyzer:
         # Calculate readability metrics
         readability_metrics = self._calculate_readability(text)
         
+        # Perform ML-based analysis
+        ml_results = self.ml_analyzer.analyze_text_ml(text)
+        
         # Analyze each chunk for risk patterns
         for chunk_idx, chunk in enumerate(chunks):
             chunk_text = chunk['text']
@@ -327,31 +333,42 @@ class TOSAnalyzer:
                 })
                 total_flags += len(chunk_flags)
         
-        # Calculate risk score
-        risk_score = self._calculate_risk_score(risk_breakdown)
+        # Merge ML results with pattern-based results
+        merged_risk_breakdown = self._merge_risk_results(risk_breakdown, ml_results.get('risk_breakdown', {}))
+        merged_positive_indicators = self._merge_positive_results(positive_indicators, ml_results.get('positive_indicators', {}))
+        
+        # Calculate risk score using merged results
+        risk_score = self._calculate_risk_score(merged_risk_breakdown)
         
         # Calculate transparency score with positive indicators boost
         base_transparency = 100 - (len(dark_patterns_found) * 8) - (risk_score * 0.25)
-        positive_boost = min(20, len(positive_indicators) * 5)
+        positive_boost = min(20, len(merged_positive_indicators) * 5)
         transparency_score = max(0, min(100, base_transparency + positive_boost))
         
-        # Generate executive summary
+        # Generate executive summary using merged results
         executive_summary = self._generate_executive_summary(
-            risk_score, risk_breakdown, dark_patterns_found, 
-            positive_indicators, transparency_score, readability_metrics
+            risk_score, merged_risk_breakdown, dark_patterns_found, 
+            merged_positive_indicators, transparency_score, readability_metrics
         )
         
         return {
             'risk_score': risk_score,
-            'risk_breakdown': risk_breakdown,
+            'risk_breakdown': merged_risk_breakdown,
             'dark_patterns': dark_patterns_found,
-            'positive_indicators': positive_indicators,
+            'positive_indicators': merged_positive_indicators,
             'flagged_sections': flagged_sections,
             'transparency_score': int(transparency_score),
             'total_flags': total_flags,
             'text_length': len(text),
             'chunk_count': len(chunks),
             'executive_summary': executive_summary,
+            'ml_analysis_info': {
+                'ml_enabled': ml_results.get('ml_analysis', False),
+                'classification_method': ml_results.get('classification_method', 'pattern_only'),
+                'confidence_scores': ml_results.get('ml_confidence_scores', {}),
+                'sentences_processed': ml_results.get('sentences_processed', 0),
+                'model_info': self.ml_analyzer.get_model_info()
+            },
             **readability_metrics
         }
     
@@ -538,6 +555,41 @@ class TOSAnalyzer:
         ])
         
         return summary
+    
+    def _merge_risk_results(self, pattern_results: Dict, ml_results: Dict) -> Dict:
+        """Merge pattern-based and ML-based risk results"""
+        merged = pattern_results.copy()
+        
+        for category, ml_data in ml_results.items():
+            if category in merged:
+                # Merge counts and matches
+                merged[category]['count'] += ml_data['count']
+                merged[category]['matches'].extend(ml_data.get('matches', []))
+                # Add ML confidence if available
+                if 'confidence_scores' in ml_data:
+                    merged[category]['ml_confidence'] = sum(ml_data['confidence_scores']) / len(ml_data['confidence_scores'])
+            else:
+                # Add new ML-detected category
+                merged[category] = ml_data.copy()
+                merged[category]['source'] = 'ml_detected'
+        
+        return merged
+    
+    def _merge_positive_results(self, pattern_results: Dict, ml_results: Dict) -> Dict:
+        """Merge pattern-based and ML-based positive indicator results"""
+        merged = pattern_results.copy()
+        
+        for category, ml_data in ml_results.items():
+            if category in merged:
+                merged[category]['count'] += ml_data['count']
+                merged[category]['matches'].extend(ml_data.get('matches', []))
+                if 'confidence_scores' in ml_data:
+                    merged[category]['ml_confidence'] = sum(ml_data['confidence_scores']) / len(ml_data['confidence_scores'])
+            else:
+                merged[category] = ml_data.copy()
+                merged[category]['source'] = 'ml_detected'
+        
+        return merged
     
     def generate_file_hash(self, content: bytes) -> str:
         """Generate hash for file content"""

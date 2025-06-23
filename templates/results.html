@@ -208,6 +208,18 @@
                             <div class="small text-muted">{{ analysis_data.complex_words_ratio }}% complex</div>
                         </div>
                     </div>
+                    
+                    {% if analysis_data.ml_analysis_info %}
+                    <div class="mt-3 pt-2 border-top">
+                        <div class="small text-muted">
+                            <i class="fas fa-{{ 'brain' if analysis_data.ml_analysis_info.ml_enabled else 'search' }} me-1"></i>
+                            Analysis Method: {{ analysis_data.ml_analysis_info.classification_method|replace('_', ' ')|title }}
+                            {% if analysis_data.ml_analysis_info.sentences_processed %}
+                            ({{ analysis_data.ml_analysis_info.sentences_processed }} sentences analyzed)
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -232,9 +244,18 @@
                     {% for category, data in analysis_data.risk_breakdown.items() %}
                     <div class="risk-item">
                         <div class="risk-item-info">
-                            <h4>{{ category.replace('_', ' ').title() }}</h4>
+                            <h4>{{ category.replace('_', ' ').title() }}
+                                {% if data.get('source') == 'ml_detected' %}
+                                <span class="badge bg-primary ms-2">ML Detected</span>
+                                {% endif %}
+                            </h4>
                             <p>{{ data.description }}</p>
-                            <small class="text-muted">{{ data.count }} occurrence{{ 's' if data.count != 1 else '' }}</small>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">{{ data.count }} occurrence{{ 's' if data.count != 1 else '' }}</small>
+                                {% if data.get('ml_confidence') %}
+                                <small class="text-info">Confidence: {{ "%.0f"|format(data.ml_confidence * 100) }}%</small>
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="risk-item-score">
                             {{ data.count * data.weight if (data.count * data.weight) <= data.weight else data.weight }}
@@ -265,10 +286,19 @@
                     
                     {% for pattern_type, data in analysis_data.dark_patterns.items() %}
                     <div class="dark-pattern-item">
-                        <h4>{{ pattern_type.replace('_', ' ').title() }}</h4>
-                        <p class="small text-muted mb-1">
-                            {{ data.count }} instance{{ 's' if data.count != 1 else '' }} found
-                        </p>
+                        <h4>{{ pattern_type.replace('_', ' ').title() }}
+                            {% if data.get('source') == 'ml_detected' %}
+                            <span class="badge bg-warning ms-2">ML Detected</span>
+                            {% endif %}
+                        </h4>
+                        <div class="d-flex justify-content-between">
+                            <p class="small text-muted mb-1">
+                                {{ data.count }} instance{{ 's' if data.count != 1 else '' }} found
+                            </p>
+                            {% if data.get('ml_confidence') %}
+                            <small class="text-warning">{{ "%.0f"|format(data.ml_confidence * 100) }}%</small>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -290,10 +320,19 @@
                 
                 {% for indicator_type, data in analysis_data.positive_indicators.items() %}
                 <div class="positive-indicator-item">
-                    <h4>{{ indicator_type.replace('_', ' ').title() }}</h4>
-                    <p class="small text-muted mb-1">
-                        {{ data.count }} positive indication{{ 's' if data.count != 1 else '' }} found
-                    </p>
+                    <h4>{{ indicator_type.replace('_', ' ').title() }}
+                        {% if data.get('source') == 'ml_detected' %}
+                        <span class="badge bg-success ms-2">ML Detected</span>
+                        {% endif %}
+                    </h4>
+                    <div class="d-flex justify-content-between">
+                        <p class="small text-muted mb-1">
+                            {{ data.count }} positive indication{{ 's' if data.count != 1 else '' }} found
+                        </p>
+                        {% if data.get('ml_confidence') %}
+                        <small class="text-success">{{ "%.0f"|format(data.ml_confidence * 100) }}%</small>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
                 
