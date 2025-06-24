@@ -73,6 +73,56 @@ class EnhancedPatternAnalyzer:
         
         # Enhanced dark pattern detection
         self.dark_pattern_enhanced = {
+            'forced_consent_coercion': {
+                'patterns': [
+                    # Consent through passive actions
+                    r'(?i)(?:by|through).*?(?:using|accessing|browsing|scrolling|clicking|visiting).*?(?:you|user).*?(?:consent|agree|accept|acknowledge)',
+                    r'(?i)(?:continued|ongoing|further).*?(?:use|access|browsing).*?(?:constitutes|means|implies|indicates|represents).*?(?:consent|agreement|acceptance)',
+                    r'(?i)(?:accessing|using|browsing).*?(?:this|our).*?(?:site|service|platform|website).*?(?:means|implies|constitutes).*?(?:you|user).*?(?:agree|consent|accept)',
+                    r'(?i)(?:deemed|considered|assumed|treated).*?(?:to|as).*?(?:have|having).*?(?:consented|agreed|accepted)',
+                    r'(?i)(?:consent|agreement).*?(?:automatic|automatically|implied|passive|default|presumed)',
+                    r'(?i)(?:no.*?action.*?required|automatic.*?consent|passive.*?acceptance|implied.*?consent)',
+                ],
+                'severity': 'critical',
+                'confidence_base': 0.9,
+                'description': 'Forced consent through passive user actions'
+            },
+            'unilateral_term_control': {
+                'patterns': [
+                    # Non-negotiable, unilateral term changes
+                    r'(?i)(?:we|company|service).*?(?:may|can|will|shall|reserve.*?right).*?(?:change|modify|update|alter|amend).*?(?:these.*?terms|this.*?agreement|any.*?provision).*?(?:at.*?any.*?time|anytime|without.*?notice|sole.*?discretion)',
+                    r'(?i)(?:terms|agreement|conditions).*?(?:may.*?be|can.*?be|will.*?be|are.*?subject.*?to).*?(?:changed|modified|updated|revised).*?(?:unilaterally|at.*?will|without.*?consent|sole.*?discretion)',
+                    r'(?i)(?:you|user).*?(?:may.*?not|cannot|are.*?not.*?permitted|have.*?no.*?right).*?(?:modify|change|negotiate|alter).*?(?:these.*?terms|this.*?agreement)',
+                    r'(?i)(?:take.*?it.*?or.*?leave.*?it|non-negotiable|no.*?negotiation|final.*?terms|binding.*?without.*?negotiation)',
+                ],
+                'severity': 'critical',
+                'confidence_base': 0.85,
+                'description': 'Company retains unilateral control over terms'
+            },
+            'irrevocable_legal_waiver': {
+                'patterns': [
+                    # Permanent legal rights waiver
+                    r'(?i)(?:binding|mandatory|required|irrevocable).*?arbitration.*?(?:waive|waiver|give.*?up|forfeit|surrender).*?(?:right|rights).*?(?:to|for).*?(?:jury.*?trial|court.*?proceedings|class.*?action)',
+                    r'(?i)(?:no.*?opt.*?out|cannot.*?opt.*?out|irrevocable.*?waiver|permanent.*?waiver).*?(?:arbitration|dispute.*?resolution)',
+                    r'(?i)(?:waive|waiver|give.*?up|forfeit).*?(?:permanently|forever|irrevocably|in.*?perpetuity).*?(?:right|rights).*?(?:to|for).*?(?:sue|court|trial|legal.*?action)',
+                    r'(?i)(?:class.*?action|collective.*?action|representative.*?action).*?(?:waiver|waive|prohibited|forbidden|not.*?permitted|banned)',
+                ],
+                'severity': 'critical',
+                'confidence_base': 0.9,
+                'description': 'Irrevocable waiver of fundamental legal rights'
+            },
+            'consequence_obfuscation': {
+                'patterns': [
+                    # Hidden or vague consequences
+                    r'(?i)(?:we|company|service).*?(?:may|can|will|reserve.*?right).*?(?:terminate|suspend|ban|disable|revoke|cancel).*?(?:your|user).*?(?:account|access|service).*?(?:for.*?any.*?reason|at.*?any.*?time|without.*?cause|sole.*?discretion)',
+                    r'(?i)(?:immediate|instant|without.*?warning|without.*?notice|summary).*?(?:termination|suspension|cancellation|account.*?closure)',
+                    r'(?i)(?:consequences|penalties|sanctions|actions).*?(?:may.*?include|can.*?include|include.*?but.*?not.*?limited.*?to).*?(?:termination|suspension|legal.*?action|prosecution|forfeiture)',
+                    r'(?i)(?:forfeit|lose|surrender|waive).*?(?:all|any).*?(?:data|content|credits|payments|rights|access).*?(?:upon|after|following).*?(?:termination|suspension)',
+                ],
+                'severity': 'high',
+                'confidence_base': 0.8,
+                'description': 'Hidden or disproportionate consequences for violations'
+            },
             'auto_renewal_hidden': {
                 'patterns': [
                     r'(?i)(?:automatic|auto).*?(?:renewal|billing|charge|payment).*?(?:unless|until).*?(?:cancel|opt.*?out)',
@@ -80,8 +130,9 @@ class EnhancedPatternAnalyzer:
                     r'(?i)(?:cancel|stop).*?(?:before|prior to).*?(?:renewal|billing).*?(?:date|period).*?(?:avoid|prevent).*?(?:charge|fee)',
                     r'(?i)(?:trial|promotional).*?(?:period|offer).*?(?:ends|expires).*?(?:automatic|auto).*?(?:billing|charge)',
                 ],
-                'severity': 'critical',
-                'confidence_base': 0.8
+                'severity': 'high',
+                'confidence_base': 0.8,
+                'description': 'Hidden automatic renewal and billing'
             },
             'hidden_cost_patterns': {
                 'patterns': [
@@ -91,7 +142,8 @@ class EnhancedPatternAnalyzer:
                     r'(?i)(?:excluding|not including|separate).*?(?:delivery|shipping|processing|transaction).*?(?:fees|costs)',
                 ],
                 'severity': 'moderate',
-                'confidence_base': 0.75
+                'confidence_base': 0.75,
+                'description': 'Hidden or unclear additional costs'
             },
             'opt_out_friction': {
                 'patterns': [
@@ -101,7 +153,8 @@ class EnhancedPatternAnalyzer:
                     r'(?i)(?:online|website).*?(?:cancellation|termination).*?(?:not available|not permitted|not allowed)',
                 ],
                 'severity': 'moderate',
-                'confidence_base': 0.8
+                'confidence_base': 0.8,
+                'description': 'Difficult or friction-heavy opt-out processes'
             }
         }
         

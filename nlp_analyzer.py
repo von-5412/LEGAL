@@ -85,6 +85,42 @@ class TOSAnalyzer:
         
         # Dark patterns for manipulative language
         self.dark_patterns = {
+            'forced_consent': [
+                # Consent through passive actions
+                r'(?i)(?:by|through).*?(?:using|accessing|browsing|scrolling|clicking|visiting).*?(?:you|user).*?(?:consent|agree|accept)',
+                r'(?i)(?:continued|ongoing|further).*?(?:use|access|browsing).*?(?:constitutes|means|implies|indicates).*?(?:consent|agreement|acceptance)',
+                r'(?i)(?:accessing|using|browsing).*?(?:this|our).*?(?:site|service|platform).*?(?:means|implies|constitutes).*?(?:you|user).*?(?:agree|consent|accept)',
+                r'(?i)(?:deemed|considered|assumed).*?(?:to|as).*?(?:have|having).*?(?:consented|agreed|accepted)',
+                r'(?i)(?:consent|agreement).*?(?:automatic|automatically|implied|passive|default)',
+                r'(?i)(?:no.*?action.*?required|automatic.*?consent|passive.*?acceptance)',
+                r'(?i)(?:silence|inaction|failure.*?to.*?object).*?(?:constitutes|means|implies).*?(?:consent|agreement)',
+            ],
+            'non_negotiable_terms': [
+                # Unilateral control over terms
+                r'(?i)(?:we|company|service).*?(?:may|can|will|shall|reserve.*?right).*?(?:change|modify|update|alter|amend).*?(?:these.*?terms|this.*?agreement|any.*?provision).*?(?:at.*?any.*?time|anytime|without.*?notice|sole.*?discretion)',
+                r'(?i)(?:terms|agreement|conditions).*?(?:may.*?be|can.*?be|will.*?be|are.*?subject.*?to).*?(?:changed|modified|updated|revised).*?(?:unilaterally|at.*?will|without.*?consent|sole.*?discretion)',
+                r'(?i)(?:modifications|changes|updates).*?(?:effective|binding).*?(?:immediately|upon.*?posting|when.*?posted|without.*?notice)',
+                r'(?i)(?:you|user).*?(?:may.*?not|cannot|are.*?not.*?permitted|have.*?no.*?right).*?(?:modify|change|negotiate|alter).*?(?:these.*?terms|this.*?agreement)',
+                r'(?i)(?:take.*?it.*?or.*?leave.*?it|non-negotiable|no.*?negotiation|final.*?terms)',
+            ],
+            'irrevocable_arbitration': [
+                # Forced arbitration with no escape
+                r'(?i)(?:binding|mandatory|required|irrevocable).*?arbitration.*?(?:waive|waiver|give.*?up|forfeit|surrender).*?(?:right|rights).*?(?:to|for).*?(?:jury.*?trial|court.*?proceedings|class.*?action)',
+                r'(?i)(?:all|any).*?(?:disputes|claims|controversies).*?(?:must|shall|will|are.*?required.*?to).*?(?:be.*?resolved|go.*?to|submit.*?to).*?(?:binding|mandatory|individual).*?arbitration',
+                r'(?i)(?:no.*?opt.*?out|cannot.*?opt.*?out|irrevocable.*?waiver).*?(?:arbitration|dispute.*?resolution)',
+                r'(?i)(?:waive|waiver|give.*?up|forfeit).*?(?:permanently|forever|irrevocably).*?(?:right|rights).*?(?:to|for).*?(?:sue|court|trial|legal.*?action)',
+                r'(?i)(?:class.*?action|collective.*?action|representative.*?action).*?(?:waiver|waive|prohibited|forbidden|not.*?permitted)',
+                r'(?i)(?:individual.*?basis.*?only|one.*?on.*?one.*?arbitration|private.*?arbitration.*?only)',
+            ],
+            'hidden_consequences': [
+                # Vague termination and punishment clauses
+                r'(?i)(?:we|company|service).*?(?:may|can|will|reserve.*?right).*?(?:terminate|suspend|ban|disable|revoke|cancel).*?(?:your|user).*?(?:account|access|service).*?(?:for.*?any.*?reason|at.*?any.*?time|without.*?cause|sole.*?discretion|immediately)',
+                r'(?i)(?:immediate|instant|without.*?warning|without.*?notice).*?(?:termination|suspension|cancellation|account.*?closure)',
+                r'(?i)(?:violation|breach).*?(?:may.*?result|will.*?result|results).*?(?:in|to).*?(?:immediate|instant|automatic).*?(?:termination|suspension|ban)',
+                r'(?i)(?:consequences|penalties|sanctions).*?(?:may.*?include|can.*?include|include.*?but.*?not.*?limited.*?to).*?(?:termination|suspension|legal.*?action|prosecution)',
+                r'(?i)(?:any.*?reason|sole.*?discretion|without.*?cause|without.*?explanation|without.*?notice).*?(?:terminate|suspend|ban|revoke)',
+                r'(?i)(?:forfeit|lose|surrender).*?(?:all|any).*?(?:data|content|credits|payments|rights).*?(?:upon|after|following).*?(?:termination|suspension)',
+            ],
             'urgency_pressure': [
                 r'(?i)limited.*?time.*?offer',
                 r'(?i)act.*?now.*?or',
@@ -237,6 +273,31 @@ class TOSAnalyzer:
         
         # Perform ML-based analysis
         ml_results = self.ml_analyzer.analyze_text_ml(text)
+        
+        # Import and use enhanced pattern analyzer
+        try:
+            from enhanced_patterns import EnhancedPatternAnalyzer
+            enhanced_analyzer = EnhancedPatternAnalyzer()
+            enhanced_results = enhanced_analyzer.analyze_with_enhanced_patterns(text)
+            
+            # Merge enhanced dark patterns with basic detection
+            enhanced_dark_patterns = self._detect_enhanced_dark_patterns(text, enhanced_analyzer.dark_pattern_enhanced)
+            
+            # Merge with existing dark patterns
+            for pattern_type, data in enhanced_dark_patterns.items():
+                if pattern_type in dark_patterns_found:
+                    # Merge counts and add enhanced detection info
+                    dark_patterns_found[pattern_type]['count'] += data['count']
+                    dark_patterns_found[pattern_type]['enhanced_detection'] = True
+                    dark_patterns_found[pattern_type]['severity'] = data.get('severity', 'moderate')
+                    dark_patterns_found[pattern_type]['description'] = data.get('description', '')
+                    dark_patterns_found[pattern_type]['matches'].extend(data['matches'])
+                else:
+                    dark_patterns_found[pattern_type] = data
+                    dark_patterns_found[pattern_type]['enhanced_detection'] = True
+                    
+        except ImportError:
+            logging.warning("Enhanced pattern analyzer not available")
         
         # Analyze each chunk for risk patterns
         for chunk_idx, chunk in enumerate(chunks):
@@ -464,6 +525,39 @@ class TOSAnalyzer:
             'complex_words_ratio': round(complex_words_ratio, 1)
         }
     
+    def _detect_enhanced_dark_patterns(self, text: str, enhanced_patterns: Dict) -> Dict:
+        """Detect enhanced dark patterns with contextual analysis"""
+        detected_patterns = {}
+        
+        for pattern_type, pattern_data in enhanced_patterns.items():
+            matches = []
+            for pattern in pattern_data['patterns']:
+                pattern_matches = list(re.finditer(pattern, text))
+                matches.extend(pattern_matches)
+            
+            if matches:
+                detected_patterns[pattern_type] = {
+                    'count': len(matches),
+                    'severity': pattern_data['severity'],
+                    'description': pattern_data.get('description', f"Enhanced detection: {pattern_type.replace('_', ' ')}"),
+                    'confidence_base': pattern_data.get('confidence_base', 0.7),
+                    'matches': []
+                }
+                
+                for match in matches:
+                    start = max(0, match.start() - 50)
+                    end = min(len(text), match.end() + 50)
+                    context = text[start:end].strip()
+                    
+                    detected_patterns[pattern_type]['matches'].append({
+                        'text': match.group(),
+                        'context': context,
+                        'start': match.start(),
+                        'end': match.end()
+                    })
+        
+        return detected_patterns
+    
     def _generate_executive_summary(self, risk_score, risk_breakdown, dark_patterns, 
                                    positive_indicators, transparency_score, readability_metrics):
         """Generate an executive summary of the analysis"""
@@ -526,19 +620,58 @@ class TOSAnalyzer:
             else:
                 summary['moderate_concerns'].append(issue)
         
-        # Dark pattern severity
-        critical_patterns = ['auto_renewal', 'hidden_costs']
+        # Dark pattern severity with new critical patterns
+        critical_patterns = [
+            'forced_consent', 'forced_consent_coercion', 'non_negotiable_terms', 
+            'unilateral_term_control', 'irrevocable_arbitration', 'irrevocable_legal_waiver',
+            'auto_renewal', 'hidden_costs'
+        ]
+        high_risk_patterns = [
+            'hidden_consequences', 'consequence_obfuscation', 'auto_renewal_hidden'
+        ]
+        
         for pattern_type, data in dark_patterns.items():
-            if data['count'] > 1:
+            if data['count'] > 0:  # Changed from > 1 to > 0 to catch single instances
+                pattern_name = pattern_type.replace('_', ' ').title()
+                
+                # Get specific impact messages for new patterns
+                impact_messages = {
+                    'forced_consent': "You 'agree' just by using the service - no real choice given",
+                    'forced_consent_coercion': "Your consent is assumed through passive actions like scrolling",
+                    'non_negotiable_terms': "Company can change rules anytime - you have no say",
+                    'unilateral_term_control': "Terms can be changed unilaterally without your consent",
+                    'irrevocable_arbitration': "You permanently lose the right to sue in court",
+                    'irrevocable_legal_waiver': "Fundamental legal rights are permanently waived",
+                    'hidden_consequences': "Severe punishments hidden in vague language",
+                    'consequence_obfuscation': "Consequences for violations are deliberately unclear",
+                    'auto_renewal': "Designed to trick you into recurring charges",
+                    'hidden_costs': "Additional fees hidden until it's too late"
+                }
+                
+                action_messages = {
+                    'forced_consent': "STOP - This is predatory consent manipulation",
+                    'forced_consent_coercion': "RED FLAG - Consent should be explicit, not assumed",
+                    'non_negotiable_terms': "DANGER - You have no protection from rule changes",
+                    'unilateral_term_control': "WARNING - Company has absolute control over terms",
+                    'irrevocable_arbitration': "CRITICAL - You lose fundamental legal rights forever",
+                    'irrevocable_legal_waiver': "EMERGENCY - Seek legal advice before proceeding",
+                    'hidden_consequences': "HIGH RISK - Punishments are deliberately obscured",
+                    'consequence_obfuscation': "CAUTION - Understand penalties before agreeing"
+                }
+                
                 issue = {
-                    'type': pattern_type.replace('_', ' ').title(),
+                    'type': pattern_name,
                     'count': data['count'],
-                    'impact': f"Designed to trick you into {pattern_type.replace('_', ' ')}",
-                    'action': 'Be extra cautious - this is intentionally deceptive'
+                    'impact': impact_messages.get(pattern_type, f"Designed to manipulate users through {pattern_type.replace('_', ' ')}"),
+                    'action': action_messages.get(pattern_type, 'Be extra cautious - this is intentionally deceptive'),
+                    'severity': data.get('severity', 'moderate'),
+                    'enhanced_detection': data.get('enhanced_detection', False)
                 }
                 
                 if pattern_type in critical_patterns:
                     summary['critical_issues'].append(issue)
+                elif pattern_type in high_risk_patterns:
+                    summary['critical_issues'].append(issue)  # Treat high-risk as critical
                 else:
                     summary['moderate_concerns'].append(issue)
         
