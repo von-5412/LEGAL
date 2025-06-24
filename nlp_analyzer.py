@@ -863,31 +863,31 @@ class TOSAnalyzer:
                 }
                 
                 action_messages = {
-                'forced_consent': "STOP - This is predatory consent manipulation",
-                'forced_consent_coercion': "RED FLAG - Consent should be explicit, not assumed",
-                'non_negotiable_terms': "DANGER - You have no protection from rule changes",
-                'unilateral_term_control': "WARNING - Company has absolute control over terms",
-                'irrevocable_arbitration': "CRITICAL - You lose fundamental legal rights forever",
-                'irrevocable_legal_waiver': "EMERGENCY - Seek legal advice before proceeding",
-                'hidden_consequences': "HIGH RISK - Punishments are deliberately obscured",
-                'consequence_obfuscation': "CAUTION - Understand penalties before agreeing"
-            }
+                    'forced_consent': "STOP - This is predatory consent manipulation",
+                    'forced_consent_coercion': "RED FLAG - Consent should be explicit, not assumed",
+                    'non_negotiable_terms': "DANGER - You have no protection from rule changes",
+                    'unilateral_term_control': "WARNING - Company has absolute control over terms",
+                    'irrevocable_arbitration': "CRITICAL - You lose fundamental legal rights forever",
+                    'irrevocable_legal_waiver': "EMERGENCY - Seek legal advice before proceeding",
+                    'hidden_consequences': "HIGH RISK - Punishments are deliberately obscured",
+                    'consequence_obfuscation': "CAUTION - Understand penalties before agreeing"
+                }
                 
                 issue = {
-                'type': pattern_name,
-                'count': data['count'],
-                'impact': impact_messages.get(pattern_type, f"Designed to manipulate users through {pattern_type.replace('_', ' ')}"),
-                'action': action_messages.get(pattern_type, 'Be extra cautious - this is intentionally deceptive'),
-                'severity': data.get('severity', 'moderate'),
-                'enhanced_detection': data.get('enhanced_detection', False)
-            }
+                    'type': pattern_name,
+                    'count': data['count'],
+                    'impact': impact_messages.get(pattern_type, f"Designed to manipulate users through {pattern_type.replace('_', ' ')}"),
+                    'action': action_messages.get(pattern_type, 'Be extra cautious - this is intentionally deceptive'),
+                    'severity': data.get('severity', 'moderate'),
+                    'enhanced_detection': data.get('enhanced_detection', False)
+                }
                 
                 if pattern_type in critical_patterns:
-                summary['critical_issues'].append(issue)
-            elif pattern_type in high_risk_patterns:
-                summary['critical_issues'].append(issue)  # Treat high-risk as critical
-            else:
-                summary['moderate_concerns'].append(issue)
+                    summary['critical_issues'].append(issue)
+                elif pattern_type in high_risk_patterns:
+                    summary['critical_issues'].append(issue)  # Treat high-risk as critical
+                else:
+                    summary['moderate_concerns'].append(issue)
         
         # Generate overall assessment based on actual findings AND risk score alignment
         critical_count = len(summary['critical_issues'])
