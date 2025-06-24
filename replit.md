@@ -95,7 +95,14 @@ The application follows a traditional Flask web application architecture with th
 - Proxy-aware setup for deployment behind load balancers
 - Configurable upload limits and file type restrictions
 
-## Recent Enhancements
+## Recent Changes
+
+**June 24, 2025 - Project Migration Completed:**
+- Successfully migrated TOS Analyzer from Replit Agent to standard Replit environment
+- Removed problematic PyTorch/Transformers dependencies that caused installation conflicts
+- Maintained ML fallback functionality with enhanced pattern-based analysis
+- Application now runs cleanly with core Flask dependencies
+- Gunicorn server successfully serving on port 5000
 
 **June 23, 2025 - Enhanced Analysis Features:**
 - Added executive summary with intelligent risk assessment
