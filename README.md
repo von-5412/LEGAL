@@ -669,4 +669,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-For detailed CLI documentation and architecture diagrams, see [CLI_DOCS.md](CLI_DOCS.md)
+For detailed CLI documentation and architecture diagrams, see [CLI_DOCS.md](CLI_DOCS.md)#   L E G A L  
+ 
