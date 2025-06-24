@@ -102,13 +102,13 @@
                     </div>
                 </div>
                 
-                {% if analysis_data.power_analysis.compound_traps.detected_traps %}
+                {% if analysis_data.power_analysis.explanatory_flags and analysis_data.power_analysis.explanatory_flags.critical_flag_count > 0 %}
                 <div class="alert alert-danger mt-3">
-                    <h6 class="alert-heading"><i class="fas fa-spider me-2"></i>Compound Legal Traps Detected</h6>
-                    {% for trap_name, trap_data in analysis_data.power_analysis.compound_traps.detected_traps.items() %}
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Critical Issues Detected</h6>
+                    {% for flag in analysis_data.power_analysis.explanatory_flags.flags_by_severity.critical %}
                     <div class="border-start border-danger border-3 ps-3 mb-2">
-                        <strong>{{ trap_name.replace('_', ' ').title() }}</strong> ({{ "%.0f"|format(trap_data.completion_percentage) }}% complete)
-                        <div class="small text-muted">{{ trap_data.description }}</div>
+                        <strong>{{ flag.category.replace('_', ' ').title() }}</strong>
+                        <div class="small text-muted">{{ flag.explanation }}</div>
                     </div>
                     {% endfor %}
                 </div>
@@ -285,17 +285,17 @@
                         <small class="text-muted">Risk Categories</small>
                     </div>
                     <div class="col-6">
-                        <div class="h4 text-warning">{{ analysis_data.dark_patterns|length }}</div>
+                        <div class="h4 text-warning">{{ analysis_data.power_analysis.structural_dark_patterns.total_patterns_found or 0 }}</div>
                         <small class="text-muted">Dark Patterns</small>
                     </div>
                 </div>
                 <div class="row text-center mt-3">
                     <div class="col-6">
-                        <div class="h4 text-success">{{ analysis_data.positive_indicators|length }}</div>
+                        <div class="h4 text-success">{{ analysis_data.positive_indicators|length if analysis_data.positive_indicators else 0 }}</div>
                         <small class="text-muted">Good Practices</small>
                     </div>
                     <div class="col-6">
-                        <div class="h4 text-info">{{ analysis_data.readability_score }}%</div>
+                        <div class="h4 text-info">{{ analysis_data.readability_score or 'N/A' }}%</div>
                         <small class="text-muted">Readability</small>
                     </div>
                 </div>
@@ -501,7 +501,7 @@
     </div>
 
     <!-- Risk-Specific Guidance -->
-    {% if analysis_data.risk_breakdown or analysis_data.dark_patterns %}
+    {% if analysis_data.risk_breakdown or analysis_data.power_analysis.structural_dark_patterns.structural_patterns_detected %}
     <div class="row mt-4">
         <div class="col-12">
             <div class="analysis-card">
@@ -549,7 +549,7 @@
                     </div>
                     {% endif %}
                     
-                    {% if 'auto_renewal' in analysis_data.dark_patterns %}
+                    {% if 'exit_friction' in (analysis_data.power_analysis.structural_dark_patterns.structural_patterns_detected or {}) %}
                     <div class="col-lg-6 mb-3">
                         <div class="alert alert-warning">
                             <h6 class="alert-heading">
