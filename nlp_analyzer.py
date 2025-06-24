@@ -515,7 +515,7 @@ class TOSAnalyzer:
             summary['overall_assessment'] = f"CAUTION: {moderate_count} concerning clauses found. This company prioritizes their protection over yours."
             summary['bottom_line'] = "⚠️ PROCEED WITH CAUTION - Consider alternatives with better terms"
         elif moderate_count > 0:
-            summary['overall_assessment'] = f"MIXED: {moderate_count} issue{'s' if moderate_count != 1 else ''} found, but within normal range for this type of service"vice."
+            summary['overall_assessment'] = f"MIXED: {moderate_count} issue{'s' if moderate_count != 1 else ''} found, but within normal range for this type of service"
             summary['bottom_line'] = "✓ ACCEPTABLE - Standard risks for this service type"
         else:
             summary['overall_assessment'] = "GOOD: No major red flags detected. This appears to be a user-friendly agreement."
