@@ -987,7 +987,7 @@ class PowerStructureAnalyzer:
                         'category': 'power_imbalance',
                         'severity': control_data['impact_assessment'],
                         'quoted_text': clause['text'],
-                        'explanation': self._explain_power_flag(control_type, clause),
+                        'explanation': self._explain_power_flag(control_type, clause)),
                         'risk_rating': self._rate_flag_risk(control_data['impact_assessment']),
                         'user_impact': self._describe_user_impact(control_type, clause),
                         'mitigation_advice': self._suggest_mitigation(control_type)
@@ -1037,7 +1037,7 @@ class PowerStructureAnalyzer:
             'critical_flag_count': len(flag_categories['critical']),
             'high_flag_count': len(flag_categories['high']),
             'medium_flag_count': len(flag_categories['medium']),
-            'low_flag_count': len(flag_categories['low']),
+            'low_flag_count': len(flag_categories['low'])),
             'flag_summary': self._generate_flag_summary(flag_categories),
             'recommended_action': self._recommend_action_based_on_flags(flag_categories)
         }

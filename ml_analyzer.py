@@ -250,9 +250,13 @@ class LegalMLAnalyzer:
         
         # If model still not loaded, use enhanced patterns
         if not self.model_loaded:
-            from enhanced_patterns import EnhancedPatternAnalyzer
-            enhanced_analyzer = EnhancedPatternAnalyzer()
-            return enhanced_analyzer.analyze_with_enhanced_patterns(text)
+            try:
+                from enhanced_patterns import EnhancedPatternAnalyzer
+                enhanced_analyzer = EnhancedPatternAnalyzer()
+                return enhanced_analyzer.analyze_with_enhanced_patterns(text)
+            except ImportError:
+                logging.warning("Enhanced patterns not available, using basic analysis")
+                return {'error': 'ML and enhanced pattern analysis unavailable'}
         
         # Split text into sentences for analysis
         sentences = re.split(r'[.!?]+', text)
