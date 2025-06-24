@@ -973,21 +973,23 @@ class TOSAnalyzer:
         """Merge pattern-based and ML-based risk results"""
         merged = pattern_results.copy() if pattern_results else {}
         
-        if not ml_results:
+        if not ml_results or not isinstance(ml_results, dict):
             return merged
             
         for category, ml_data in ml_results.items():
+            # Skip if ml_data is not a dictionary (could be string or other type)
             if not isinstance(ml_data, dict):
                 continue
                 
             if category in merged:
                 # Merge counts and matches
                 merged[category]['count'] += ml_data.get('count', 0)
-                merged[category]['matches'].extend(ml_data.get('matches', []))
+                if 'matches' in merged[category] and 'matches' in ml_data:
+                    merged[category]['matches'].extend(ml_data.get('matches', []))
                 # Add ML confidence if available
                 if 'confidence_scores' in ml_data:
                     confidence_scores = ml_data['confidence_scores']
-                    if confidence_scores:
+                    if confidence_scores and isinstance(confidence_scores, list):
                         merged[category]['ml_confidence'] = sum(confidence_scores) / len(confidence_scores)
             else:
                 # Add new ML-detected category
@@ -1000,19 +1002,21 @@ class TOSAnalyzer:
         """Merge pattern-based and ML-based positive indicator results"""
         merged = pattern_results.copy() if pattern_results else {}
         
-        if not ml_results:
+        if not ml_results or not isinstance(ml_results, dict):
             return merged
             
         for category, ml_data in ml_results.items():
+            # Skip if ml_data is not a dictionary (could be string or other type)
             if not isinstance(ml_data, dict):
                 continue
                 
             if category in merged:
                 merged[category]['count'] += ml_data.get('count', 0)
-                merged[category]['matches'].extend(ml_data.get('matches', []))
+                if 'matches' in merged[category] and 'matches' in ml_data:
+                    merged[category]['matches'].extend(ml_data.get('matches', []))
                 if 'confidence_scores' in ml_data:
                     confidence_scores = ml_data['confidence_scores']
-                    if confidence_scores:
+                    if confidence_scores and isinstance(confidence_scores, list):
                         merged[category]['ml_confidence'] = sum(confidence_scores) / len(confidence_scores)
             else:
                 merged[category] = ml_data.copy()

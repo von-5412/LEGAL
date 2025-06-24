@@ -18,7 +18,7 @@ except ImportError as e:
     class DummyModel:
         def eval(self): pass
         def to(self, device): return self
-    
+
     class DummyTokenizer:
         def from_pretrained(self, name): return self
         def __call__(self, *args, **kwargs): return {'input_ids': None}
@@ -33,7 +33,7 @@ class LegalMLAnalyzer:
         self.tokenizer = None
         self.model = None
         self.model_loaded = False
-        
+
         # Pre-defined legal clause embeddings for classification
         self.clause_categories = {
             'data_sharing': {
@@ -87,7 +87,7 @@ class LegalMLAnalyzer:
                 'severity': 'moderate'
             }
         }
-        
+
         self.positive_indicators = {
             'user_rights': {
                 'templates': [
@@ -114,41 +114,41 @@ class LegalMLAnalyzer:
                 ]
             }
         }
-        
+
         self.category_embeddings = {}
         self.positive_embeddings = {}
-        
+
     def load_model(self):
         """Load LegalBERT model for legal text analysis"""
         if not self.ml_available:
             logging.info("ML libraries not available, using enhanced pattern-based analysis")
             self.model_loaded = False
             return
-            
+
         try:
             model_name = "nlpaueb/legal-bert-base-uncased"
             logging.info(f"Loading {model_name}...")
-            
+
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.model = AutoModel.from_pretrained(model_name)
             self.model.to(self.device)
             self.model.eval()
-            
+
             # Pre-compute embeddings for clause categories
             self._compute_category_embeddings()
             self.model_loaded = True
             logging.info("LegalBERT model loaded successfully")
-            
+
         except Exception as e:
             logging.warning(f"Failed to load LegalBERT model: {e}")
             logging.info("Falling back to enhanced pattern-based analysis")
             self.model_loaded = False
-    
+
     def _compute_category_embeddings(self):
         """Pre-compute embeddings for all clause categories"""
         if not self.model_loaded:
             return
-            
+
         # Compute embeddings for risk categories
         for category, data in self.clause_categories.items():
             embeddings = []
@@ -156,11 +156,11 @@ class LegalMLAnalyzer:
                 embedding = self._get_text_embedding(template)
                 if embedding is not None:
                     embeddings.append(embedding)
-            
+
             if embeddings:
                 # Average embeddings for this category
                 self.category_embeddings[category] = np.mean(embeddings, axis=0)
-        
+
         # Compute embeddings for positive indicators
         for category, data in self.positive_indicators.items():
             embeddings = []
@@ -168,44 +168,44 @@ class LegalMLAnalyzer:
                 embedding = self._get_text_embedding(template)
                 if embedding is not None:
                     embeddings.append(embedding)
-            
+
             if embeddings:
                 self.positive_embeddings[category] = np.mean(embeddings, axis=0)
-    
+
     def _get_text_embedding(self, text: str):
         """Get embedding for a piece of text using LegalBERT"""
         if not self.model_loaded:
             return None
-            
+
         try:
             # Tokenize and encode text
             inputs = self.tokenizer(text, return_tensors="pt", 
                                   truncation=True, padding=True, 
                                   max_length=512)
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
-            
+
             # Get embeddings
             with torch.no_grad():
                 outputs = self.model(**inputs)
                 # Use CLS token embedding
                 embedding = outputs.last_hidden_state[:, 0, :].cpu().numpy()
                 return embedding.flatten()
-                
+
         except Exception as e:
             logging.error(f"Error getting embedding for text: {e}")
             return None
-    
+
     def _classify_sentence_ml(self, sentence: str) -> Dict:
         """Classify a sentence using ML-based approach"""
         if not self.model_loaded:
             return {}
-        
+
         sentence_embedding = self._get_text_embedding(sentence)
         if sentence_embedding is None:
             return {}
-        
+
         classifications = {}
-        
+
         # Check against risk categories
         for category, category_embedding in self.category_embeddings.items():
             if not self.ml_available:
@@ -214,7 +214,7 @@ class LegalMLAnalyzer:
                 sentence_embedding.reshape(1, -1),
                 category_embedding.reshape(1, -1)
             )[0][0]
-            
+
             # Threshold for classification (adjustable)
             if similarity > 0.7:
                 classifications[category] = {
@@ -223,7 +223,7 @@ class LegalMLAnalyzer:
                     'severity': self.clause_categories[category]['severity'],
                     'weight': self.clause_categories[category]['weight']
                 }
-        
+
         # Check against positive indicators
         for category, category_embedding in self.positive_embeddings.items():
             if not self.ml_available:
@@ -232,115 +232,47 @@ class LegalMLAnalyzer:
                 sentence_embedding.reshape(1, -1),
                 category_embedding.reshape(1, -1)
             )[0][0]
-            
+
             if similarity > 0.7:
                 classifications[f"positive_{category}"] = {
                     'confidence': float(similarity),
                     'type': 'positive',
                     'severity': 'good'
                 }
-        
+
         return classifications
-    
+
     def analyze_text_ml(self, text: str) -> Dict:
-        """Analyze text using machine learning approach"""
-        # Load model if not already loaded
-        if not self.model_loaded:
-            self.load_model()
-        
-        # If model still not loaded, use enhanced patterns
-        if not self.model_loaded:
+        """
+        Analyze text using ML approach with fallback to enhanced patterns
+        """
+        if not self.ml_available:
+            logging.info("ML libraries not available, using enhanced pattern-based analysis")
             try:
                 from enhanced_patterns import EnhancedPatternAnalyzer
                 enhanced_analyzer = EnhancedPatternAnalyzer()
-                return enhanced_analyzer.analyze_with_enhanced_patterns(text)
+                result = enhanced_analyzer.analyze_with_enhanced_patterns(text)
+                # Ensure result is properly structured
+                if isinstance(result, dict):
+                    return result
+                else:
+                    return self._fallback_analysis()
             except ImportError:
-                logging.warning("Enhanced patterns not available, using basic analysis")
-                return {'error': 'ML and enhanced pattern analysis unavailable'}
-        
-        # Split text into sentences for analysis
-        sentences = re.split(r'[.!?]+', text)
-        sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
-        
-        ml_risk_breakdown = {}
-        ml_positive_indicators = {}
-        confidence_scores = {}
-        total_sentences = len(sentences)
-        processed_sentences = 0
-        
-        logging.info(f"Analyzing {total_sentences} sentences with LegalBERT...")
-        
-        for sentence in sentences:
-            try:
-                classifications = self._classify_sentence_ml(sentence)
-                processed_sentences += 1
-                
-                for category, data in classifications.items():
-                    if data['type'] == 'risk':
-                        if category not in ml_risk_breakdown:
-                            ml_risk_breakdown[category] = {
-                                'count': 0,
-                                'confidence_scores': [],
-                                'matches': [],
-                                'severity': data['severity'],
-                                'weight': data['weight'],
-                                'description': f"ML-detected {category.replace('_', ' ')}"
-                            }
-                        
-                        ml_risk_breakdown[category]['count'] += 1
-                        ml_risk_breakdown[category]['confidence_scores'].append(data['confidence'])
-                        ml_risk_breakdown[category]['matches'].append({
-                            'text': sentence[:100] + '...' if len(sentence) > 100 else sentence,
-                            'confidence': data['confidence']
-                        })
-                    
-                    elif data['type'] == 'positive':
-                        clean_category = category.replace('positive_', '')
-                        if clean_category not in ml_positive_indicators:
-                            ml_positive_indicators[clean_category] = {
-                                'count': 0,
-                                'confidence_scores': [],
-                                'matches': []
-                            }
-                        
-                        ml_positive_indicators[clean_category]['count'] += 1
-                        ml_positive_indicators[clean_category]['confidence_scores'].append(data['confidence'])
-                        ml_positive_indicators[clean_category]['matches'].append({
-                            'text': sentence[:100] + '...' if len(sentence) > 100 else sentence,
-                            'confidence': data['confidence']
-                        })
-                
-            except Exception as e:
-                logging.error(f"Error processing sentence with ML: {e}")
-                continue
-        
-        # Calculate average confidence scores
-        for category, data in ml_risk_breakdown.items():
-            if data['confidence_scores']:
-                if self.ml_available:
-                    confidence_scores[category] = np.mean(data['confidence_scores'])
-                else:
-                    confidence_scores[category] = sum(data['confidence_scores']) / len(data['confidence_scores'])
-        
-        for category, data in ml_positive_indicators.items():
-            if data['confidence_scores']:
-                if self.ml_available:
-                    confidence_scores[f"positive_{category}"] = np.mean(data['confidence_scores'])
-                else:
-                    confidence_scores[f"positive_{category}"] = sum(data['confidence_scores']) / len(data['confidence_scores'])
-        
-        logging.info(f"ML analysis completed: {processed_sentences}/{total_sentences} sentences processed")
-        
-        return {
-            'ml_analysis': self.ml_available and self.model_loaded,
-            'risk_breakdown': ml_risk_breakdown,
-            'positive_indicators': ml_positive_indicators,
-            'ml_confidence_scores': confidence_scores,
-            'classification_method': 'legalbert' if (self.ml_available and self.model_loaded) else 'enhanced_patterns',
-            'sentences_processed': processed_sentences,
-            'total_sentences': total_sentences
-        }
-    
+                logging.warning("Enhanced pattern analyzer not available either")
+                return self._fallback_analysis()
+
+        try:
+            if not self.model_loaded:
+                success = self.load_model()
+                if not success:
+                    return self._fallback_analysis()
+
+            return self._perform_ml_analysis(text)
+
+        except Exception as e:
+            logging.error(f"ML analysis failed: {e}")
+            return self._fallback_analysis()
+
     def get_model_info(self) -> Dict:
         """Get information about the loaded model"""
         return {
@@ -352,3 +284,4 @@ class LegalMLAnalyzer:
             'positive_indicators_available': len(self.positive_indicators),
             'analysis_method': 'machine_learning' if self.model_loaded else 'advanced_patterns'
         }
+```
