@@ -117,6 +117,54 @@ class PowerStructureAnalyzer:
             }
         }
         
+        # PILLAR 3: AI/Data Commodification Scanner - Hidden data monetization
+        self.data_commodification_patterns = {
+            'ai_training_extraction': {
+                'patterns': [
+                    r'(?i)(?:anonymized?|aggregated?|de-identified).*?(?:data|information|content).*?(?:may.*?be.*?used|used.*?to|for|can.*?be.*?used).*?(?:train|improve|enhance|develop|create|build).*?(?:machine.*?learning|artificial.*?intelligence|ai|ml|algorithms?|models?)',
+                    r'(?i)(?:your|user).*?(?:interactions?|behavior|usage|activity|content).*?(?:may.*?be.*?used|used.*?to|for|can.*?be.*?used).*?(?:improve|enhance|develop|train|create).*?(?:our|the).*?(?:services?|products?|algorithms?|ai|ml)',
+                    r'(?i)(?:machine.*?learning|artificial.*?intelligence|ai|ml|algorithms?).*?(?:training|development|improvement|enhancement).*?(?:using|with|from|based.*?on).*?(?:your|user|customer).*?(?:data|information|content|inputs?)'
+                ],
+                'commodification_type': 'ai_training',
+                'opt_out_available': False,
+                'transparency_level': 'hidden',
+                'weight': 35
+            },
+            'behavioral_profiling': {
+                'patterns': [
+                    r'(?i)(?:behavioral|usage|interaction|activity).*?(?:data|information|patterns?|profiles?).*?(?:collect|gather|analyze|process|use|create|build|develop)',
+                    r'(?i)(?:analytics?|metrics|insights?|profiles?).*?(?:derive|extract|generate|create|build).*?(?:from|using|based.*?on).*?(?:your|user).*?(?:data|behavior|activity|usage)',
+                    r'(?i)(?:personalization|targeted|customized).*?(?:advertising|marketing|recommendations|content).*?(?:based.*?on|using|from).*?(?:your|user).*?(?:data|behavior|preferences)'
+                ],
+                'commodification_type': 'behavioral_profiling',
+                'opt_out_available': False,
+                'transparency_level': 'vague',
+                'weight': 25
+            },
+            'data_resale_licensing': {
+                'patterns': [
+                    r'(?i)(?:share|provide|disclose|sell|license|transfer).*?(?:your|user|anonymized|aggregated).*?(?:data|information).*?(?:with|to).*?(?:third.*?parties|partners|affiliates|advertisers|business.*?partners).*?(?:for.*?their.*?(?:business.*?purposes|commercial.*?use)|for.*?marketing)',
+                    r'(?i)(?:third.*?parties|partners|affiliates).*?(?:may|can|will).*?(?:receive|access|use|process).*?(?:your|user).*?(?:data|information).*?(?:for.*?their.*?(?:own|business|commercial).*?purposes)',
+                    r'(?i)(?:monetize|commercial.*?use|business.*?purposes).*?(?:of|using|from).*?(?:your|user|customer).*?(?:data|information|content)'
+                ],
+                'commodification_type': 'data_resale',
+                'opt_out_available': False,
+                'transparency_level': 'buried',
+                'weight': 40
+            },
+            'perpetual_licensing': {
+                'patterns': [
+                    r'(?i)(?:you|user).*?(?:grant|give|provide|assign).*?(?:us|company|service.*?provider).*?(?:perpetual|irrevocable|worldwide|unlimited|unrestricted|royalty-free).*?(?:license|right|permission).*?(?:to|for).*?(?:use|exploit|monetize|commercialize)',
+                    r'(?i)(?:perpetual|irrevocable|unlimited|worldwide).*?(?:license|right|permission).*?(?:to|for).*?(?:use|modify|distribute|display|perform|create.*?derivative.*?works)',
+                    r'(?i)(?:rights?|license).*?(?:survive|continue|remain.*?in.*?effect|persist).*?(?:termination|cancellation|end.*?of.*?service|account.*?closure)'
+                ],
+                'commodification_type': 'perpetual_rights',
+                'opt_out_available': False,
+                'transparency_level': 'legal_jargon',
+                'weight': 30
+            }
+        }
+        
         # Rights stripping detection
         self.rights_erosion_patterns = {
             'privacy_rights': {
