@@ -973,37 +973,77 @@ class TOSAnalyzer:
         """Merge pattern-based and ML-based risk results"""
         merged = pattern_results.copy() if pattern_results else {}
         
-        if not ml_results or not isinstance(ml_results, dict):
+        # Validate ml_results input
+        if not ml_results:
+            logging.debug("No ML results provided for risk analysis")
+            return merged
+            
+        if not isinstance(ml_results, dict):
+            logging.warning(f"ML results is not a dictionary, got {type(ml_results)}: {ml_results}")
             return merged
             
         for category, ml_data in ml_results.items():
-            # Skip if ml_data is not a dictionary (could be string or other type)
-            if not isinstance(ml_data, dict):
-                logging.warning(f"Skipping non-dict ml_data for category {category}: {type(ml_data)}")
-                continue
-                
             try:
+                # Skip if ml_data is not a dictionary (could be string or other type)
+                if not isinstance(ml_data, dict):
+                    logging.warning(f"Skipping non-dict ml_data for category '{category}': {type(ml_data)} = {ml_data}")
+                    continue
+                
+                # Validate required fields in ml_data
+                if 'count' not in ml_data:
+                    logging.warning(f"ML data for category '{category}' missing 'count' field")
+                    continue
+                    
                 if category in merged:
                     # Ensure merged[category] is a dict before accessing it
                     if not isinstance(merged[category], dict):
-                        logging.warning(f"Skipping merge for non-dict category {category}")
+                        logging.warning(f"Skipping merge for non-dict category '{category}' in merged results")
                         continue
                         
-                    # Merge counts and matches
-                    merged[category]['count'] = merged[category].get('count', 0) + ml_data.get('count', 0)
-                    if 'matches' in merged[category] and 'matches' in ml_data:
-                        merged[category]['matches'].extend(ml_data.get('matches', []))
-                    # Add ML confidence if available
+                    # Safe merging with validation
+                    existing_count = merged[category].get('count', 0)
+                    new_count = ml_data.get('count', 0)
+                    
+                    if not isinstance(existing_count, int):
+                        existing_count = 0
+                    if not isinstance(new_count, int):
+                        new_count = 0
+                        
+                    merged[category]['count'] = existing_count + new_count
+                    
+                    # Merge matches if both exist and are lists
+                    if ('matches' in merged[category] and isinstance(merged[category]['matches'], list) and
+                        'matches' in ml_data and isinstance(ml_data['matches'], list)):
+                        merged[category]['matches'].extend(ml_data['matches'])
+                    
+                    # Add confidence scores if available
                     if 'confidence_scores' in ml_data:
                         confidence_scores = ml_data['confidence_scores']
-                        if confidence_scores and isinstance(confidence_scores, list):
+                        if confidence_scores and isinstance(confidence_scores, list) and all(isinstance(x, (int, float)) for x in confidence_scores):
                             merged[category]['ml_confidence'] = sum(confidence_scores) / len(confidence_scores)
                 else:
-                    # Add new ML-detected category
-                    merged[category] = ml_data.copy()
-                    merged[category]['source'] = 'ml_detected'
+                    # Create a safe copy of ml_data with validation
+                    try:
+                        merged[category] = {
+                            'count': ml_data.get('count', 0),
+                            'matches': ml_data.get('matches', []) if isinstance(ml_data.get('matches'), list) else [],
+                            'weight': ml_data.get('weight', 10),
+                            'description': ml_data.get('description', f'ML-detected risk: {category}'),
+                            'source': 'ml_detected'
+                        }
+                        
+                        # Add confidence if available
+                        if 'confidence_scores' in ml_data:
+                            confidence_scores = ml_data['confidence_scores']
+                            if confidence_scores and isinstance(confidence_scores, list) and all(isinstance(x, (int, float)) for x in confidence_scores):
+                                merged[category]['ml_confidence'] = sum(confidence_scores) / len(confidence_scores)
+                                
+                    except Exception as copy_error:
+                        logging.error(f"Error creating safe copy of ml_data for category '{category}': {copy_error}")
+                        continue
+                        
             except Exception as e:
-                logging.error(f"Error merging risk results for category {category}: {e}")
+                logging.error(f"Error merging risk results for category '{category}': {e}")
                 continue
         
         return merged
@@ -1012,35 +1052,75 @@ class TOSAnalyzer:
         """Merge pattern-based and ML-based positive indicator results"""
         merged = pattern_results.copy() if pattern_results else {}
         
-        if not ml_results or not isinstance(ml_results, dict):
+        # Validate ml_results input
+        if not ml_results:
+            logging.debug("No ML results provided for positive indicators")
+            return merged
+            
+        if not isinstance(ml_results, dict):
+            logging.warning(f"ML results is not a dictionary, got {type(ml_results)}: {ml_results}")
             return merged
             
         for category, ml_data in ml_results.items():
-            # Skip if ml_data is not a dictionary (could be string or other type)
-            if not isinstance(ml_data, dict):
-                logging.warning(f"Skipping non-dict ml_data for category {category}: {type(ml_data)}")
-                continue
-                
             try:
+                # Skip if ml_data is not a dictionary (could be string or other type)
+                if not isinstance(ml_data, dict):
+                    logging.warning(f"Skipping non-dict ml_data for category '{category}': {type(ml_data)} = {ml_data}")
+                    continue
+                
+                # Validate required fields in ml_data
+                if 'count' not in ml_data:
+                    logging.warning(f"ML data for category '{category}' missing 'count' field")
+                    continue
+                    
                 if category in merged:
                     # Ensure merged[category] is a dict before accessing it
                     if not isinstance(merged[category], dict):
-                        logging.warning(f"Skipping merge for non-dict category {category}")
+                        logging.warning(f"Skipping merge for non-dict category '{category}' in merged results")
                         continue
                         
-                    merged[category]['count'] = merged[category].get('count', 0) + ml_data.get('count', 0)
-                    if 'matches' in merged[category] and 'matches' in ml_data:
-                        merged[category]['matches'].extend(ml_data.get('matches', []))
+                    # Safe merging with validation
+                    existing_count = merged[category].get('count', 0)
+                    new_count = ml_data.get('count', 0)
+                    
+                    if not isinstance(existing_count, int):
+                        existing_count = 0
+                    if not isinstance(new_count, int):
+                        new_count = 0
+                        
+                    merged[category]['count'] = existing_count + new_count
+                    
+                    # Merge matches if both exist and are lists
+                    if ('matches' in merged[category] and isinstance(merged[category]['matches'], list) and
+                        'matches' in ml_data and isinstance(ml_data['matches'], list)):
+                        merged[category]['matches'].extend(ml_data['matches'])
+                    
+                    # Add confidence scores if available
                     if 'confidence_scores' in ml_data:
                         confidence_scores = ml_data['confidence_scores']
-                        if confidence_scores and isinstance(confidence_scores, list):
+                        if confidence_scores and isinstance(confidence_scores, list) and all(isinstance(x, (int, float)) for x in confidence_scores):
                             merged[category]['ml_confidence'] = sum(confidence_scores) / len(confidence_scores)
                 else:
-                    # Create a safe copy of ml_data
-                    merged[category] = ml_data.copy()
-                    merged[category]['source'] = 'ml_detected'
+                    # Create a safe copy of ml_data with validation
+                    try:
+                        merged[category] = {
+                            'count': ml_data.get('count', 0),
+                            'matches': ml_data.get('matches', []) if isinstance(ml_data.get('matches'), list) else [],
+                            'source': 'ml_detected'
+                        }
+                        
+                        # Add confidence if available
+                        if 'confidence_scores' in ml_data:
+                            confidence_scores = ml_data['confidence_scores']
+                            if confidence_scores and isinstance(confidence_scores, list) and all(isinstance(x, (int, float)) for x in confidence_scores):
+                                merged[category]['ml_confidence'] = sum(confidence_scores) / len(confidence_scores)
+                                
+                    except Exception as copy_error:
+                        logging.error(f"Error creating safe copy of ml_data for category '{category}': {copy_error}")
+                        continue
+                        
             except Exception as e:
-                logging.error(f"Error merging positive results for category {category}: {e}")
+                logging.error(f"Error merging positive results for category '{category}': {e}")
                 continue
         
         return merged
