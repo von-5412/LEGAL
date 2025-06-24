@@ -97,12 +97,22 @@ The application follows a traditional Flask web application architecture with th
 
 ## Recent Changes
 
-**June 24, 2025 - Project Migration Completed:**
+**June 24, 2025 - Project Migration and Enhancement Completed:**
 - Successfully migrated TOS Analyzer from Replit Agent to standard Replit environment
 - Removed problematic PyTorch/Transformers dependencies that caused installation conflicts
 - Maintained ML fallback functionality with enhanced pattern-based analysis
 - Application now runs cleanly with core Flask dependencies
 - Gunicorn server successfully serving on port 5000
+
+**Major Enhancement - Power Structure Analysis:**
+- Implemented revolutionary power dynamics analysis that goes beyond simple clause detection
+- Added "Rights Stripping Index" that measures user rights vs company control (1-10 scale)
+- Created "Power Flow Map" showing who controls rule changes, termination, data, and disputes
+- Built compound trap detection that identifies dangerous clause combinations
+- Added user persona-based risk assessment (individual, business, healthcare, developer)
+- Implemented structural dark pattern detection beyond just language analysis
+- Redefined transparency scoring to measure real user empowerment, not just clarity
+- Added "Digital Dictatorship" detection for extreme power imbalances
 
 **June 23, 2025 - Enhanced Analysis Features:**
 - Added executive summary with intelligent risk assessment

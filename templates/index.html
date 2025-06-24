@@ -73,7 +73,7 @@
                 Recent Analyses
             </h3>
             {% for analysis in recent_analyses %}
-            <a href="{{ url_for('results', analysis_id=analysis.id) }}" class="recent-item">
+            <a href="{{ url_for('results', result_id=analysis.id) }}" class="recent-item">
                 <div class="recent-item-info">
                     <h4>{{ analysis.filename }}</h4>
                     <p>{{ analysis.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>

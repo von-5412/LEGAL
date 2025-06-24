@@ -1,8 +1,8 @@
-import os
-import logging
 from flask import render_template, request, redirect, url_for, flash, jsonify
-from datetime import datetime
 from werkzeug.utils import secure_filename
+import os
+import hashlib
+from datetime import datetime
 from app import app, db
 from models import AnalysisResult
 from nlp_analyzer import TOSAnalyzer
@@ -13,13 +13,13 @@ analyzer = TOSAnalyzer()
 ALLOWED_EXTENSIONS = {'txt', 'pdf'}
 
 def allowed_file(filename):
+    """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def index():
-    """Main page with upload form"""
-    recent_analyses = AnalysisResult.query.order_by(AnalysisResult.created_at.desc()).limit(5).all()
-    return render_template('index.html', recent_analyses=recent_analyses)
+    """Main upload page"""
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -29,163 +29,138 @@ def upload_file():
         return redirect(url_for('index'))
     
     file = request.files['file']
+    user_persona = request.form.get('user_persona', 'individual_user')
+    
     if file.filename == '':
         flash('No file selected', 'error')
         return redirect(url_for('index'))
     
-    if file and allowed_file(file.filename):
-        try:
-            filename = secure_filename(file.filename)
-            file_content = file.read()
-            
-            # Generate file hash for deduplication
-            file_hash = analyzer.generate_file_hash(file_content)
-            
-            # Check if we've already analyzed this file
-            existing_analysis = AnalysisResult.query.filter_by(file_hash=file_hash).first()
-            if existing_analysis:
-                flash('This file has already been analyzed. Showing previous results.', 'info')
-                return redirect(url_for('results', analysis_id=existing_analysis.id))
-            
-            # Extract text based on file type
-            if filename.lower().endswith('.pdf'):
-                text = analyzer.extract_text_from_pdf(file_content)
-            else:
-                try:
-                    text = file_content.decode('utf-8', errors='ignore')
-                except UnicodeDecodeError:
-                    try:
-                        text = file_content.decode('latin-1', errors='ignore')
-                    except:
-                        text = str(file_content, errors='ignore')
-            
-            if not text or not text.strip():
-                flash('Could not extract text from the file. Please check the file format and ensure it contains readable text.', 'error')
-                return redirect(url_for('index'))
-            
-            # Analyze the text
-            analysis_data = analyzer.analyze_text(text)
-            
-            if not analysis_data:
-                flash('Analysis failed. Please try again with a different file.', 'error')
-                return redirect(url_for('index'))
-            
-            # Save analysis to database
-            analysis_result = AnalysisResult(
-                filename=filename,
-                file_hash=file_hash,
-                risk_score=analysis_data.get('risk_score', 0)
-            )
-            analysis_result.set_analysis_data(analysis_data)
-            
-            db.session.add(analysis_result)
-            db.session.commit()
-            
-            flash('Analysis completed successfully!', 'success')
-            return redirect(url_for('results', analysis_id=analysis_result.id))
-            
-        except Exception as e:
-            logging.error(f"Error processing file: {e}", exc_info=True)
-            flash(f'Error processing file: {str(e)}. Please try again.', 'error')
+    if not allowed_file(file.filename):
+        flash('Please upload a PDF or TXT file only', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        # Read file content
+        file_content = file.read()
+        
+        # Generate hash for deduplication
+        file_hash = hashlib.sha256(file_content).hexdigest()
+        
+        # Check if we've already analyzed this file
+        existing_analysis = AnalysisResult.query.filter_by(file_hash=file_hash).first()
+        if existing_analysis:
+            flash('This file has already been analyzed. Showing previous results.', 'info')
+            return redirect(url_for('results', result_id=existing_analysis.id))
+        
+        # Extract text based on file type
+        filename = secure_filename(file.filename)
+        if filename.lower().endswith('.pdf'):
+            text = analyzer.extract_text_from_pdf(file_content)
+        else:
+            text = file_content.decode('utf-8')
+        
+        if not text.strip():
+            flash('No text could be extracted from the file', 'error')
             return redirect(url_for('index'))
-    else:
-        flash('Invalid file type. Please upload a PDF or text file.', 'error')
+        
+        # Analyze text with user persona
+        analysis_results = analyzer.analyze_text(text)
+        
+        # Update power analysis with selected persona
+        if 'power_analysis' in analysis_results:
+            power_analysis = analyzer.power_analyzer.analyze_power_structure(text, user_persona=user_persona)
+            analysis_results['power_analysis'] = power_analysis
+        
+        # Save results to database
+        result = AnalysisResult(
+            filename=filename,
+            file_hash=file_hash,
+            file_size=len(file_content),
+            risk_score=analysis_results['risk_score'],
+            transparency_score=analysis_results['transparency_score'],
+            analysis_data=analysis_results
+        )
+        
+        db.session.add(result)
+        db.session.commit()
+        
+        flash('Analysis completed successfully!', 'success')
+        return redirect(url_for('results', result_id=result.id))
+        
+    except Exception as e:
+        app.logger.error(f"Analysis error: {str(e)}")
+        flash(f'Error analyzing file: {str(e)}', 'error')
         return redirect(url_for('index'))
 
-@app.route('/results/<int:analysis_id>')
-def results(analysis_id):
+@app.route('/results/<int:result_id>')
+def results(result_id):
     """Display analysis results"""
-    analysis = AnalysisResult.query.get_or_404(analysis_id)
-    analysis_data = analysis.get_analysis_data()
-    
-    return render_template('results.html', 
-                         analysis=analysis, 
-                         analysis_data=analysis_data)
-
-@app.route('/api/analysis/<int:analysis_id>')
-def api_analysis(analysis_id):
-    """API endpoint for analysis data"""
-    analysis = AnalysisResult.query.get_or_404(analysis_id)
-    analysis_data = analysis.get_analysis_data()
-    
-    return jsonify({
-        'id': analysis.id,
-        'filename': analysis.filename,
-        'risk_score': analysis.risk_score,
-        'created_at': analysis.created_at.isoformat(),
-        'analysis_data': analysis_data
-    })
-
-@app.route('/export/<int:analysis_id>')
-def export_analysis(analysis_id):
-    """Export analysis results as JSON"""
-    analysis = AnalysisResult.query.get_or_404(analysis_id)
-    analysis_data = analysis.get_analysis_data()
-    
-    export_data = {
-        'document_info': {
-            'filename': analysis.filename,
-            'analyzed_at': analysis.created_at.isoformat(),
-            'file_hash': analysis.file_hash
-        },
-        'risk_assessment': {
-            'overall_risk_score': analysis.risk_score,
-            'transparency_score': analysis_data.get('transparency_score', 0),
-            'readability_score': analysis_data.get('readability_score', 0)
-        },
-        'detailed_analysis': analysis_data,
-        'export_info': {
-            'exported_at': datetime.utcnow().isoformat(),
-            'version': '1.0',
-            'analyzer': 'TOS Analyzer - Local NLP Processing'
-        }
-    }
-    
-    response = jsonify(export_data)
-    response.headers['Content-Disposition'] = f'attachment; filename={analysis.filename}_analysis.json'
-    return response
-
-@app.route('/compare')
-def compare_analyses():
-    """Compare multiple analyses"""
-    analyses = AnalysisResult.query.order_by(AnalysisResult.created_at.desc()).limit(10).all()
-    
-    # Calculate industry benchmarks
-    if analyses:
-        risk_scores = [a.risk_score for a in analyses]
-        avg_risk = sum(risk_scores) / len(risk_scores)
-        
-        transparency_scores = []
-        readability_scores = []
-        
-        for analysis in analyses:
-            data = analysis.get_analysis_data()
-            transparency_scores.append(data.get('transparency_score', 0))
-            readability_scores.append(data.get('readability_score', 0))
-        
-        benchmarks = {
-            'average_risk_score': round(avg_risk, 1),
-            'average_transparency': round(sum(transparency_scores) / len(transparency_scores), 1),
-            'average_readability': round(sum(readability_scores) / len(readability_scores), 1),
-            'total_documents': len(analyses)
-        }
-    else:
-        benchmarks = {
-            'average_risk_score': 0,
-            'average_transparency': 0,
-            'average_readability': 0,
-            'total_documents': 0
-        }
-    
-    return render_template('compare.html', analyses=analyses, benchmarks=benchmarks)
+    analysis = AnalysisResult.query.get_or_404(result_id)
+    return render_template('results.html', analysis=analysis, analysis_data=analysis.analysis_data)
 
 @app.route('/history')
 def history():
-    """View analysis history"""
-    analyses = AnalysisResult.query.order_by(AnalysisResult.created_at.desc()).all()
+    """Show analysis history"""
+    analyses = AnalysisResult.query.order_by(AnalysisResult.created_at.desc()).limit(50).all()
     return render_template('history.html', analyses=analyses)
 
-@app.errorhandler(413)
-def too_large(e):
-    flash('File too large. Maximum size is 16MB.', 'error')
-    return redirect(url_for('index'))
+@app.route('/compare')
+def compare():
+    """Compare multiple analyses"""
+    analyses = AnalysisResult.query.order_by(AnalysisResult.created_at.desc()).limit(20).all()
+    return render_template('compare.html', analyses=analyses)
+
+@app.route('/export/<int:result_id>')
+def export_results(result_id):
+    """Export analysis results as JSON"""
+    analysis = AnalysisResult.query.get_or_404(result_id)
+    
+    export_data = {
+        'filename': analysis.filename,
+        'analysis_date': analysis.created_at.isoformat(),
+        'file_size': analysis.file_size,
+        'risk_score': analysis.risk_score,
+        'transparency_score': analysis.transparency_score,
+        'analysis_results': analysis.analysis_data
+    }
+    
+    return jsonify(export_data)
+
+@app.route('/api/analyze', methods=['POST'])
+def api_analyze():
+    """API endpoint for text analysis"""
+    if not request.is_json:
+        return jsonify({'error': 'Content-Type must be application/json'}), 400
+    
+    data = request.get_json()
+    text = data.get('text', '')
+    user_persona = data.get('user_persona', 'individual_user')
+    
+    if not text.strip():
+        return jsonify({'error': 'No text provided'}), 400
+    
+    try:
+        # Analyze the text
+        results = analyzer.analyze_text(text)
+        
+        # Add power analysis with persona
+        power_analysis = analyzer.power_analyzer.analyze_power_structure(text, user_persona=user_persona)
+        results['power_analysis'] = power_analysis
+        
+        return jsonify({
+            'status': 'success',
+            'results': results
+        })
+        
+    except Exception as e:
+        app.logger.error(f"API analysis error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500

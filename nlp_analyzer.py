@@ -5,11 +5,13 @@ import hashlib
 import PyPDF2
 from io import BytesIO
 from ml_analyzer import LegalMLAnalyzer
+from power_analysis import PowerStructureAnalyzer
 
 class TOSAnalyzer:
     def __init__(self):
-        # Initialize ML analyzer
+        # Initialize ML analyzer and power structure analyzer
         self.ml_analyzer = LegalMLAnalyzer()
+        self.power_analyzer = PowerStructureAnalyzer()
         # Risk patterns with weights
         self.risk_patterns = {
             'data_sharing': {
@@ -345,7 +347,10 @@ class TOSAnalyzer:
         positive_boost = min(20, len(merged_positive_indicators) * 5)
         transparency_score = max(0, min(100, base_transparency + positive_boost))
         
-        # Generate executive summary using merged results
+        # Perform power structure analysis
+        power_analysis = self.power_analyzer.analyze_power_structure(text, user_persona='individual_user')
+        
+        # Generate executive summary using merged results and power analysis
         executive_summary = self._generate_executive_summary(
             risk_score, merged_risk_breakdown, dark_patterns_found, 
             merged_positive_indicators, transparency_score, readability_metrics
@@ -362,6 +367,7 @@ class TOSAnalyzer:
             'text_length': len(text),
             'chunk_count': len(chunks),
             'executive_summary': executive_summary,
+            'power_analysis': power_analysis,
             'ml_analysis_info': {
                 'ml_enabled': ml_results.get('ml_analysis', False),
                 'classification_method': ml_results.get('classification_method', 'pattern_only'),

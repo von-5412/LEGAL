@@ -26,6 +26,109 @@
         </div>
     </div>
 
+    <!-- Power Structure Analysis -->
+    {% if analysis_data.power_analysis %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="analysis-card">
+                <h3>
+                    <i class="fas fa-balance-scale text-danger"></i>
+                    Power Structure Analysis
+                </h3>
+                
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card border-{{ 'danger' if analysis_data.power_analysis.overall_assessment.risk_level == 'critical' else 'warning' if analysis_data.power_analysis.overall_assessment.risk_level == 'high' else 'primary' }}">
+                            <div class="card-header bg-{{ 'danger' if analysis_data.power_analysis.overall_assessment.risk_level == 'critical' else 'warning' if analysis_data.power_analysis.overall_assessment.risk_level == 'high' else 'primary' }} text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-crown me-2"></i>
+                                    {{ analysis_data.power_analysis.overall_assessment.assessment }}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-3">
+                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.overall_assessment.overall_score < 30 else 'warning' if analysis_data.power_analysis.overall_assessment.overall_score < 70 else 'success' }}">
+                                            {{ analysis_data.power_analysis.overall_assessment.overall_score }}%
+                                        </div>
+                                        <small class="text-muted">User Power</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="h4 text-{{ 'success' if analysis_data.power_analysis.rights_stripping_index.rights_vs_control_balance > 7 else 'warning' if analysis_data.power_analysis.rights_stripping_index.rights_vs_control_balance > 4 else 'danger' }}">
+                                            {{ "%.1f"|format(analysis_data.power_analysis.rights_stripping_index.rights_vs_control_balance) }}/10
+                                        </div>
+                                        <small class="text-muted">Rights Balance</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.power_distribution.company_control_percentage > 75 else 'warning' if analysis_data.power_analysis.power_distribution.company_control_percentage > 50 else 'success' }}">
+                                            {{ "%.0f"|format(analysis_data.power_analysis.power_distribution.company_control_percentage) }}%
+                                        </div>
+                                        <small class="text-muted">Company Control</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.structural_dark_patterns.total_friction_score > 15 else 'warning' if analysis_data.power_analysis.structural_dark_patterns.total_friction_score > 8 else 'success' }}">
+                                            {{ analysis_data.power_analysis.structural_dark_patterns.total_friction_score }}
+                                        </div>
+                                        <small class="text-muted">Friction Score</small>
+                                    </div>
+                                </div>
+                                
+                                {% if analysis_data.power_analysis.power_distribution.is_digital_dictatorship %}
+                                <div class="alert alert-danger mt-3 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Digital Dictatorship Detected:</strong> You're signing away fundamental user rights and legal protections.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-sitemap me-2"></i>Power Flow Map</h6>
+                            </div>
+                            <div class="card-body">
+                                {% for key, holder in analysis_data.power_analysis.power_flow_map.items() %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-capitalize">{{ key.replace('_', ' ') }}:</span>
+                                    <span class="badge bg-{{ 'danger' if holder == 'company' else 'success' if holder == 'user' else 'warning' if holder == 'shared' else 'secondary' }}">
+                                        {{ holder.title() }}
+                                    </span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if analysis_data.power_analysis.compound_traps.detected_traps %}
+                <div class="alert alert-danger mt-3">
+                    <h6 class="alert-heading"><i class="fas fa-spider me-2"></i>Compound Legal Traps Detected</h6>
+                    {% for trap_name, trap_data in analysis_data.power_analysis.compound_traps.detected_traps.items() %}
+                    <div class="border-start border-danger border-3 ps-3 mb-2">
+                        <strong>{{ trap_name.replace('_', ' ').title() }}</strong> ({{ "%.0f"|format(trap_data.completion_percentage) }}% complete)
+                        <div class="small text-muted">{{ trap_data.description }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if analysis_data.power_analysis.overall_assessment.critical_issues %}
+                <div class="alert alert-warning mt-3">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Critical Power Issues</h6>
+                    <ul class="mb-0">
+                        {% for issue in analysis_data.power_analysis.overall_assessment.critical_issues %}
+                        <li>{{ issue }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Executive Summary -->
     <div class="row mb-4">
         <div class="col-12">
