@@ -123,6 +123,15 @@ The application follows a traditional Flask web application architecture with th
 - Set realistic transparency ceiling at 70% maximum
 - Corrected overall risk scoring to reflect actual document danger levels
 
+**June 24, 2025 - 5-Pillar Analysis System Implemented:**
+- PILLAR 1: Power Imbalance Detector - Shows who controls rules, data, rights, disputes
+- PILLAR 2: Structural Dark Pattern Scanner - Detects manipulation beyond language
+- PILLAR 3: AI/Data Commodification Scanner - Flags hidden data training, resale, profiling
+- PILLAR 4: Weighted Risk Scoring - Prioritizes high-damage clauses over clause count
+- PILLAR 5: Explanatory Flag Reporting - Quotes, explains, and rates every red flag clearly
+- Each pillar provides detailed breakdowns with specific clause identification and impact assessment
+- Comprehensive flag system categorizes issues by severity with actionable explanations
+
 **June 23, 2025 - Enhanced Analysis Features:**
 - Added executive summary with intelligent risk assessment
 - Implemented positive indicator detection for good practices

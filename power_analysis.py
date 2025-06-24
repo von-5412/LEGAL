@@ -23,68 +23,97 @@ class PowerStructureAnalyzer:
     def __init__(self):
         """Initialize power structure analyzer with sophisticated patterns"""
         
-        # Power holder detection patterns - realistic scoring
-        self.power_patterns = {
-            'company_absolute': {
+        # PILLAR 1: Power Imbalance Detector - Who controls what
+        self.power_control_patterns = {
+            'rule_modification_power': {
                 'patterns': [
-                    r'(?i)(?:we|company|service provider).*?(?:may|can|will|shall|reserve|retain).*?(?:at.*?(?:our|sole|absolute|complete).*?discretion|without.*?notice|any.*?time|anytime)',
-                    r'(?i)(?:sole|absolute|complete|unlimited|unrestricted).*?(?:discretion|right|authority|power).*?(?:to|for)',
-                    r'(?i)(?:without.*?(?:notice|warning|cause|reason|liability|obligation)|immediately|instantly).*?(?:terminate|suspend|modify|change|remove)',
-                    r'(?i)(?:final|binding|conclusive|irrevocable|non-negotiable).*?(?:decision|determination|judgment)',
-                    r'(?i)(?:assign|transfer|sublicense).*?(?:without.*?limitation|to.*?third.*?parties|any.*?purpose)',
-                    r'(?i)(?:disputes?|claims?).*?(?:shall|must|will).*?(?:be.*?governed|resolved|subject).*?(?:by|in|under).*?(?:laws?.*?of|courts?.*?of|jurisdiction.*?of)'
+                    r'(?i)(?:we|company|service provider).*?(?:may|can|will|shall|reserve|retain).*?(?:modify|change|update|alter|amend).*?(?:terms|agreement|policy|rules).*?(?:at.*?(?:our|sole|absolute|complete).*?discretion|without.*?(?:notice|consent)|any.*?time|anytime)',
+                    r'(?i)(?:terms|agreement|policy).*?(?:may.*?be|can.*?be|are|will.*?be).*?(?:changed|modified|updated|revised).*?(?:at.*?(?:our|sole|complete).*?discretion|without.*?(?:notice|consent)|any.*?time)'
                 ],
+                'power_holder': 'company',
+                'impact': 'high',
+                'weight': 30
+            },
+            'data_ownership_control': {
+                'patterns': [
+                    r'(?i)(?:we|company|service provider).*?(?:own|retain|control|possess).*?(?:all|any|your|user).*?(?:data|information|content|intellectual.*?property)',
+                    r'(?i)(?:you|user).*?(?:grant|give|assign|transfer|provide).*?(?:us|company|service provider).*?(?:unlimited|perpetual|irrevocable|worldwide|exclusive).*?(?:license|right|permission)'
+                ],
+                'power_holder': 'company',
+                'impact': 'critical',
+                'weight': 35
+            },
+            'termination_power': {
+                'patterns': [
+                    r'(?i)(?:we|company|service provider).*?(?:may|can|will|shall|reserve|retain).*?(?:terminate|suspend|end|discontinue|cancel).*?(?:your|user).*?(?:account|access|service).*?(?:at.*?(?:our|sole|absolute|complete).*?discretion|without.*?(?:notice|cause|reason)|any.*?time|immediately)',
+                    r'(?i)(?:immediate|instant|without.*?notice).*?(?:termination|suspension|cancellation).*?(?:of|for).*?(?:account|service|access)'
+                ],
+                'power_holder': 'company', 
+                'impact': 'high',
                 'weight': 25
+            },
+            'dispute_resolution_power': {
+                'patterns': [
+                    r'(?i)(?:all|any).*?(?:disputes?|claims?|controversies?).*?(?:shall|must|will|are.*?required.*?to).*?(?:be.*?(?:resolved|settled|decided|handled)|go.*?to).*?(?:binding.*?arbitration|arbitration|specific.*?court|designated.*?jurisdiction)',
+                    r'(?i)(?:you|user).*?(?:waive|give.*?up|surrender|forfeit).*?(?:right|claim).*?(?:to|for).*?(?:jury.*?trial|class.*?action|court.*?proceedings|legal.*?action)'
+                ],
+                'power_holder': 'company',
+                'impact': 'critical',
+                'weight': 40
             },
             'user_empowerment': {
                 'patterns': [
-                    r'(?i)(?:you|user).*?(?:may|can|have.*?right|entitled).*?(?:opt.*?out|withdraw|cancel|modify|delete|access|control)',
-                    r'(?i)(?:with.*?(?:your|user).*?(?:explicit|written|prior).*?consent|permission|approval|authorization)',
-                    r'(?i)(?:you.*?can.*?(?:object|refuse|decline|opt.*?out)|right.*?to.*?(?:object|refuse|decline))',
-                    r'(?i)(?:user.*?choice|user.*?control|your.*?decision|at.*?your.*?option)',
-                    r'(?i)(?:you.*?may.*?request.*?deletion|data.*?portability|right.*?to.*?be.*?forgotten)'
+                    r'(?i)(?:you|user).*?(?:may|can|have.*?the.*?right|are.*?entitled).*?(?:to|for).*?(?:opt.*?out|withdraw|cancel|modify|delete|access|control|refuse|object)',
+                    r'(?i)(?:with.*?(?:your|user).*?(?:explicit|express|written|prior|informed).*?consent|only.*?with.*?(?:your|user).*?permission)',
+                    r'(?i)(?:you|user).*?(?:retain|keep|maintain).*?(?:full|complete|absolute).*?(?:control|ownership|rights).*?(?:over|to|of).*?(?:your|user).*?(?:data|content|information)'
                 ],
-                'weight': -8  # Minimal impact unless explicitly strong
-            },
-            'ml_data_extraction': {
-                'patterns': [
-                    r'(?i)(?:anonymized?|aggregated?).*?data.*?(?:may.*?be.*?used|used.*?to|for).*?(?:improve|enhance|develop|train|analytics?|research)',
-                    r'(?i)(?:behavioral|usage|interaction).*?data.*?(?:collect|gather|analyze|process|use)',
-                    r'(?i)(?:machine.*?learning|artificial.*?intelligence|ml|ai|algorithms?).*?(?:training|development|improvement)',
-                    r'(?i)(?:analytics?|metrics|insights?).*?(?:derive|extract|generate).*?from.*?(?:your|user).*?data'
-                ],
-                'weight': 20  # High impact for ML training
+                'power_holder': 'user',
+                'impact': 'positive',
+                'weight': -15
             }
         }
         
-        # Structural dark patterns - what really matters
-        self.structural_patterns = {
-            'power_loops': {
+        # PILLAR 2: Structural Dark Pattern Scanner - Beyond language manipulation
+        self.structural_dark_patterns = {
+            'exit_friction': {
                 'patterns': [
-                    r'(?i)(?:data|information).*?(?:retained|stored|kept).*?(?:after|following|upon).*?(?:termination|cancellation|deletion)',
-                    r'(?i)(?:anonymized?|aggregated?).*?data.*?(?:may.*?be.*?retained|retained.*?indefinitely|kept.*?permanently)',
-                    r'(?i)(?:refund|reimbursement).*?(?:subject.*?to|conditional.*?on|depends.*?on).*?(?:breach|violation|compliance)',
-                    r'(?i)(?:only|exclusively).*?(?:account.*?owner|administrator).*?(?:may|can).*?(?:contact|communicate|request)'
+                    r'(?i)(?:cancel|terminate|close|delete).*?(?:account|subscription|service).*?(?:must|shall|require|need).*?(?:contact|call|write|email|submit.*?request)',
+                    r'(?i)(?:deletion|removal|cancellation).*?(?:request|application).*?(?:processed|completed|take|require).*?(?:up.*?to|within|may.*?take).*?(?:\d+.*?(?:business.*?)?days?|\d+.*?weeks?|\d+.*?months?)',
+                    r'(?i)(?:verification|authentication|confirmation).*?(?:process|procedure|steps?).*?(?:required|necessary|mandatory).*?(?:before|prior.*?to).*?(?:deletion|cancellation|termination)'
                 ],
-                'weight': 15
+                'manipulation_type': 'exit_barriers',
+                'damage_level': 'high',
+                'weight': 25
             },
-            'friction_gradients': {
+            'data_retention_trap': {
                 'patterns': [
-                    r'(?i)(?:request.*?deletion|data.*?removal|account.*?closure).*?(?:must|shall|requires?).*?(?:written|formal|official).*?(?:request|notice|application)',
-                    r'(?i)(?:processing.*?time|response.*?time|completion.*?time).*?(?:up.*?to|may.*?take|within).*?(?:\d+.*?days?|\d+.*?weeks?|\d+.*?months?)',
-                    r'(?i)(?:verification|authentication|confirmation).*?(?:process|procedure|steps?).*?(?:required|necessary|mandatory)',
-                    r'(?i)(?:fees?|charges?|costs?).*?(?:may.*?apply|associated.*?with|incurred.*?for).*?(?:processing|handling|administration)'
+                    r'(?i)(?:data|information|records?).*?(?:may.*?be.*?retained|retained|kept|stored).*?(?:indefinitely|permanently|for.*?legitimate.*?business.*?purposes|after.*?(?:termination|cancellation|deletion))',
+                    r'(?i)(?:anonymized?|aggregated?|de-identified).*?(?:data|information).*?(?:may.*?be.*?retained|kept|used).*?(?:indefinitely|permanently|without.*?limitation)',
+                    r'(?i)(?:we|company).*?(?:may|will).*?(?:retain|keep).*?(?:backup|archived|historical).*?(?:copies|versions).*?(?:of|containing).*?(?:your|user).*?(?:data|information)'
                 ],
-                'weight': 12
+                'manipulation_type': 'data_hoarding',
+                'damage_level': 'critical',
+                'weight': 30
             },
-            'reflexive_clauses': {
+            'asymmetric_obligations': {
                 'patterns': [
-                    r'(?i)(?:we|company).*?(?:not.*?liable|disclaim.*?liability|no.*?responsibility).*?(?:for|regarding|concerning).*?(?:damages?|losses?|harm)',
-                    r'(?i)(?:limitation.*?of.*?liability|liability.*?limited.*?to|maximum.*?liability).*?(?:shall.*?not.*?exceed|\$\d+|amount.*?paid)',
-                    r'(?i)(?:indemnify|hold.*?harmless|defend).*?(?:us|company|provider).*?(?:against|from).*?(?:claims?|damages?|losses?)',
-                    r'(?i)(?:waive|give.*?up|surrender).*?(?:right|claim).*?(?:to|for).*?(?:damages?|compensation|remedy)'
+                    r'(?i)(?:you|user).*?(?:must|shall|are.*?required.*?to|have.*?obligation.*?to).*?(?:provide|give|maintain|ensure).*?(?:accurate|current|complete|truthful).*?(?:information|data)',
+                    r'(?i)(?:failure|inability).*?(?:to|of).*?(?:you|user).*?(?:to|for).*?(?:comply|meet|satisfy|fulfill).*?(?:may.*?result.*?in|will.*?result.*?in|results.*?in).*?(?:immediate.*?)?(?:termination|suspension|cancellation)',
+                    r'(?i)(?:you|user).*?(?:agree|consent|acknowledge).*?(?:to|that).*?(?:indemnify|hold.*?harmless|defend).*?(?:us|company|provider)'
                 ],
-                'weight': 18
+                'manipulation_type': 'power_asymmetry',
+                'damage_level': 'high',
+                'weight': 20
+            },
+            'modification_asymmetry': {
+                'patterns': [
+                    r'(?i)(?:we|company).*?(?:may|can|reserve.*?right).*?(?:modify|change|update|alter).*?(?:at.*?any.*?time|without.*?(?:notice|consent)|with.*?(?:little|minimal|brief).*?notice)',
+                    r'(?i)(?:continued.*?use|use.*?after.*?changes|accessing.*?after.*?modification).*?(?:constitutes|means|indicates|represents).*?(?:acceptance|agreement|consent)',
+                    r'(?i)(?:you|user).*?(?:may.*?not|cannot|are.*?not.*?permitted.*?to).*?(?:modify|change|alter|negotiate).*?(?:these.*?terms|this.*?agreement|any.*?part)'
+                ],
+                'manipulation_type': 'unilateral_control',
+                'damage_level': 'high',
+                'weight': 25
             }
         }
         
@@ -212,45 +241,112 @@ class PowerStructureAnalyzer:
         }
 
     def analyze_power_structure(self, text: str, user_persona: str = 'individual_user') -> Dict[str, Any]:
-        """Comprehensive power structure analysis"""
+        """Comprehensive power structure analysis implementing the 5 pillars"""
         
         # Split into sentences for analysis
         sentences = re.split(r'[.!?]+', text)
         sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
         
-        # Analyze power distribution
-        power_analysis = self._analyze_power_distribution(sentences)
+        # PILLAR 1: Power Imbalance Detection
+        power_analysis = self._analyze_power_imbalance(sentences, text)
         
-        # Calculate rights stripping index
+        # PILLAR 2: Structural Dark Pattern Scanning  
+        structural_analysis = self._scan_structural_dark_patterns(text)
+        
+        # PILLAR 3: AI/Data Commodification Scanning
+        commodification_analysis = self._scan_data_commodification(text)
+        
+        # PILLAR 4: Weighted Risk Scoring
+        risk_analysis = self._calculate_weighted_risk_score(power_analysis, structural_analysis, commodification_analysis, user_persona)
+        
+        # PILLAR 5: Explanatory Flag Reporting
+        flag_reports = self._generate_explanatory_flags(text, sentences, power_analysis, structural_analysis, commodification_analysis)
+        
+        # Legacy compatibility fields
         rights_analysis = self._calculate_rights_stripping_index(sentences, user_persona)
-        
-        # Detect compound traps
-        compound_traps = self._detect_compound_traps(rights_analysis['categories_detected'])
-        
-        # Analyze structural dark patterns
-        structural_analysis = self._analyze_structural_patterns(text)
-        
-        # Calculate transparency score (redefined)
         transparency_analysis = self._analyze_real_transparency(text)
-        
-        # Generate power flow map
         power_flow = self._generate_power_flow_map(sentences)
         
-        # Overall assessment
-        overall_score = self._calculate_overall_power_score(
-            power_analysis, rights_analysis, structural_analysis, transparency_analysis
-        )
-        
         return {
+            # New 5-pillar structure
+            'power_imbalance_analysis': power_analysis,
+            'structural_dark_patterns': structural_analysis,
+            'data_commodification': commodification_analysis,
+            'weighted_risk_assessment': risk_analysis,
+            'explanatory_flags': flag_reports,
+            
+            # Legacy compatibility
             'power_distribution': power_analysis,
             'rights_stripping_index': rights_analysis,
-            'compound_traps': compound_traps,
-            'structural_dark_patterns': structural_analysis,
             'transparency_empowerment': transparency_analysis,
             'power_flow_map': power_flow,
-            'overall_assessment': overall_score,
+            'overall_assessment': risk_analysis,
             'user_persona': user_persona,
             'sentences_analyzed': len(sentences)
+        }
+    
+    def _analyze_power_imbalance(self, sentences: List[str], full_text: str) -> Dict[str, Any]:
+        """PILLAR 1: Detect who holds control over rules, data, rights"""
+        power_control_analysis = {}
+        total_company_power = 0
+        total_user_power = 0
+        control_mechanisms = []
+        
+        for control_type, pattern_data in self.power_control_patterns.items():
+            detected_clauses = []
+            power_score = 0
+            
+            for sentence in sentences:
+                for pattern in pattern_data['patterns']:
+                    if re.search(pattern, sentence):
+                        clause_info = {
+                            'text': sentence.strip(),
+                            'pattern_matched': pattern,
+                            'power_holder': pattern_data['power_holder'],
+                            'impact_level': pattern_data['impact'],
+                            'weight': pattern_data['weight']
+                        }
+                        detected_clauses.append(clause_info)
+                        power_score += pattern_data['weight']
+                        
+                        if pattern_data['power_holder'] == 'company':
+                            total_company_power += pattern_data['weight']
+                        else:
+                            total_user_power += pattern_data['weight']
+            
+            if detected_clauses:
+                power_control_analysis[control_type] = {
+                    'detected': True,
+                    'clause_count': len(detected_clauses),
+                    'power_score': power_score,
+                    'clauses': detected_clauses,
+                    'primary_holder': pattern_data['power_holder'],
+                    'impact_assessment': pattern_data['impact']
+                }
+                control_mechanisms.extend(detected_clauses)
+        
+        # Calculate realistic power distribution
+        base_company_power = 60  # Companies inherently control the contract
+        company_power_percentage = min(95, base_company_power + (total_company_power / 4))
+        user_power_percentage = max(5, 100 - company_power_percentage + (total_user_power / 3))
+        
+        # Cap user power realistically
+        if user_power_percentage > 25:
+            user_power_percentage = 25
+            company_power_percentage = 75
+        
+        digital_dictatorship = company_power_percentage > 85 and total_user_power < 10
+        
+        return {
+            'company_power_percentage': round(company_power_percentage, 1),
+            'user_power_percentage': round(user_power_percentage, 1),
+            'power_imbalance_score': round(abs(company_power_percentage - user_power_percentage), 1),
+            'digital_dictatorship': digital_dictatorship,
+            'control_mechanisms_detected': len(control_mechanisms),
+            'power_control_breakdown': power_control_analysis,
+            'total_company_power_points': total_company_power,
+            'total_user_power_points': total_user_power,
+            'power_assessment': self._get_power_assessment(company_power_percentage, digital_dictatorship)
         }
     
     def _analyze_power_distribution(self, sentences: List[str]) -> Dict[str, Any]:
@@ -673,3 +769,391 @@ class PowerStructureAnalyzer:
             issues.append("Extreme power asymmetry favoring company")
         
         return issues
+    
+    def _scan_structural_dark_patterns(self, text: str) -> Dict[str, Any]:
+        """PILLAR 2: Go beyond language — find manipulative structure"""
+        detected_patterns = {}
+        total_manipulation_score = 0
+        manipulation_mechanisms = []
+        
+        for pattern_type, pattern_data in self.structural_dark_patterns.items():
+            pattern_detected = False
+            clause_matches = []
+            
+            for pattern in pattern_data['patterns']:
+                matches = re.finditer(pattern, text)
+                for match in matches:
+                    pattern_detected = True
+                    start = max(0, match.start() - 50)
+                    end = min(len(text), match.end() + 50)
+                    context = text[start:end].strip()
+                    
+                    clause_info = {
+                        'matched_text': match.group(),
+                        'context': context,
+                        'manipulation_type': pattern_data['manipulation_type'],
+                        'damage_level': pattern_data['damage_level'],
+                        'weight': pattern_data['weight']
+                    }
+                    clause_matches.append(clause_info)
+                    total_manipulation_score += pattern_data['weight']
+            
+            if pattern_detected:
+                detected_patterns[pattern_type] = {
+                    'detected': True,
+                    'clause_count': len(clause_matches),
+                    'manipulation_type': pattern_data['manipulation_type'],
+                    'damage_level': pattern_data['damage_level'],
+                    'total_weight': len(clause_matches) * pattern_data['weight'],
+                    'clauses': clause_matches
+                }
+                manipulation_mechanisms.extend(clause_matches)
+        
+        # Calculate structural manipulation score
+        friction_score = min(100, total_manipulation_score)
+        manipulation_severity = self._assess_manipulation_severity(total_manipulation_score)
+        
+        return {
+            'structural_patterns_detected': detected_patterns,
+            'total_patterns_found': len(detected_patterns),
+            'friction_score': friction_score,
+            'manipulation_score': total_manipulation_score,
+            'manipulation_severity': manipulation_severity,
+            'dark_patterns_detected': len(manipulation_mechanisms),
+            'structural_assessment': self._get_structural_assessment(friction_score),
+            'manipulation_mechanisms': manipulation_mechanisms
+        }
+    
+    def _scan_data_commodification(self, text: str) -> Dict[str, Any]:
+        """PILLAR 3: Flag hidden data training, resale, behavioral profiling"""
+        commodification_detected = {}
+        total_commodification_score = 0
+        hidden_monetization = []
+        
+        for commodity_type, pattern_data in self.data_commodification_patterns.items():
+            commodity_detected = False
+            clause_matches = []
+            
+            for pattern in pattern_data['patterns']:
+                matches = re.finditer(pattern, text)
+                for match in matches:
+                    commodity_detected = True
+                    start = max(0, match.start() - 75)
+                    end = min(len(text), match.end() + 75)
+                    context = text[start:end].strip()
+                    
+                    clause_info = {
+                        'matched_text': match.group(),
+                        'context': context,
+                        'commodification_type': pattern_data['commodification_type'],
+                        'opt_out_available': pattern_data['opt_out_available'],
+                        'transparency_level': pattern_data['transparency_level'],
+                        'weight': pattern_data['weight'],
+                        'explanation': self._explain_commodification_risk(pattern_data['commodification_type'])
+                    }
+                    clause_matches.append(clause_info)
+                    total_commodification_score += pattern_data['weight']
+            
+            if commodity_detected:
+                commodification_detected[commodity_type] = {
+                    'detected': True,
+                    'clause_count': len(clause_matches),
+                    'commodification_type': pattern_data['commodification_type'],
+                    'transparency_level': pattern_data['transparency_level'],
+                    'opt_out_available': pattern_data['opt_out_available'],
+                    'total_weight': len(clause_matches) * pattern_data['weight'],
+                    'clauses': clause_matches,
+                    'risk_explanation': self._explain_commodification_risk(pattern_data['commodification_type'])
+                }
+                hidden_monetization.extend(clause_matches)
+        
+        # Calculate data commodification risk
+        commodification_risk = min(100, total_commodification_score)
+        data_safety_score = max(0, 100 - commodification_risk)
+        
+        return {
+            'commodification_patterns': commodification_detected,
+            'total_commodification_types': len(commodification_detected),
+            'commodification_risk_score': commodification_risk,
+            'data_safety_score': data_safety_score,
+            'hidden_monetization_count': len(hidden_monetization),
+            'ai_training_detected': 'ai_training_extraction' in commodification_detected,
+            'behavioral_profiling_detected': 'behavioral_profiling' in commodification_detected,
+            'data_resale_detected': 'data_resale_licensing' in commodification_detected,
+            'perpetual_licensing_detected': 'perpetual_licensing' in commodification_detected,
+            'commodification_assessment': self._assess_commodification_level(commodification_risk),
+            'hidden_monetization_mechanisms': hidden_monetization
+        }
+    
+    def _calculate_weighted_risk_score(self, power_analysis: Dict, structural_analysis: Dict, 
+                                     commodification_analysis: Dict, user_persona: str) -> Dict[str, Any]:
+        """PILLAR 4: Prioritize high-damage clauses, not just clause count"""
+        
+        # Calculate weighted risk components based on actual damage potential
+        power_risk = self._calculate_power_risk_weighted(power_analysis)
+        structural_risk = self._calculate_structural_risk_weighted(structural_analysis)
+        commodification_risk = commodification_analysis.get('commodification_risk_score', 0)
+        
+        # Weighted combination (prioritizing highest-damage clauses)
+        total_weighted_risk = (
+            power_risk * 0.35 +           # Power imbalance is critical
+            commodification_risk * 0.30 + # Data commodification is very serious
+            structural_risk * 0.25 +      # Structural manipulation matters
+            self._get_persona_risk_modifier(user_persona) * 0.10  # Persona-specific adjustments
+        )
+        
+        # Overall risk assessment
+        risk_level = self._determine_risk_level(total_weighted_risk)
+        
+        return {
+            'overall_score': round(total_weighted_risk, 1),
+            'risk_level': risk_level,
+            'assessment': self._get_risk_assessment(total_weighted_risk),
+            'component_scores': {
+                'power_risk': round(power_risk, 1),
+                'structural_risk': round(structural_risk, 1), 
+                'commodification_risk': round(commodification_risk, 1)
+            },
+            'high_damage_clauses': self._identify_high_damage_clauses(power_analysis, structural_analysis, commodification_analysis),
+            'critical_issues': self._identify_critical_issues_weighted(power_analysis, structural_analysis, commodification_analysis)
+        }
+    
+    def _generate_explanatory_flags(self, text: str, sentences: List[str], power_analysis: Dict,
+                                  structural_analysis: Dict, commodification_analysis: Dict) -> Dict[str, Any]:
+        """PILLAR 5: Quote, explain, and rate every red flag clearly"""
+        
+        all_flags = []
+        flag_categories = {
+            'critical': [],
+            'high': [],
+            'medium': [],
+            'low': []
+        }
+        
+        # Extract flags from power analysis
+        for control_type, control_data in power_analysis.get('power_control_breakdown', {}).items():
+            if control_data.get('detected'):
+                for clause in control_data['clauses']:
+                    flag = {
+                        'flag_id': f"power_{control_type}_{len(all_flags)}",
+                        'category': 'power_imbalance',
+                        'severity': control_data['impact_assessment'],
+                        'quoted_text': clause['text'],
+                        'explanation': self._explain_power_flag(control_type, clause),
+                        'risk_rating': self._rate_flag_risk(control_data['impact_assessment']),
+                        'user_impact': self._describe_user_impact(control_type, clause),
+                        'mitigation_advice': self._suggest_mitigation(control_type)
+                    }
+                    all_flags.append(flag)
+                    flag_categories[control_data['impact_assessment']].append(flag)
+        
+        # Extract flags from structural analysis
+        for pattern_type, pattern_data in structural_analysis.get('structural_patterns_detected', {}).items():
+            if pattern_data.get('detected'):
+                for clause in pattern_data['clauses']:
+                    flag = {
+                        'flag_id': f"structural_{pattern_type}_{len(all_flags)}",
+                        'category': 'structural_manipulation',
+                        'severity': pattern_data['damage_level'],
+                        'quoted_text': clause['context'],
+                        'explanation': self._explain_structural_flag(pattern_type, clause),
+                        'risk_rating': self._rate_flag_risk(pattern_data['damage_level']),
+                        'user_impact': self._describe_structural_impact(pattern_type, clause),
+                        'mitigation_advice': self._suggest_structural_mitigation(pattern_type)
+                    }
+                    all_flags.append(flag)
+                    flag_categories[pattern_data['damage_level']].append(flag)
+        
+        # Extract flags from commodification analysis
+        for commodity_type, commodity_data in commodification_analysis.get('commodification_patterns', {}).items():
+            if commodity_data.get('detected'):
+                for clause in commodity_data['clauses']:
+                    severity = self._determine_commodification_severity(commodity_data['commodification_type'])
+                    flag = {
+                        'flag_id': f"commodity_{commodity_type}_{len(all_flags)}",
+                        'category': 'data_commodification',
+                        'severity': severity,
+                        'quoted_text': clause['context'],
+                        'explanation': clause['explanation'],
+                        'risk_rating': self._rate_flag_risk(severity),
+                        'user_impact': self._describe_commodification_impact(commodity_type, clause),
+                        'mitigation_advice': self._suggest_commodification_mitigation(commodity_type)
+                    }
+                    all_flags.append(flag)
+                    flag_categories[severity].append(flag)
+        
+        return {
+            'total_flags': len(all_flags),
+            'all_flags': all_flags,
+            'flags_by_severity': flag_categories,
+            'critical_flag_count': len(flag_categories['critical']),
+            'high_flag_count': len(flag_categories['high']),
+            'medium_flag_count': len(flag_categories['medium']),
+            'low_flag_count': len(flag_categories['low']),
+            'flag_summary': self._generate_flag_summary(flag_categories),
+            'recommended_action': self._recommend_action_based_on_flags(flag_categories)
+        }
+    
+    # Helper methods for the 5 pillars
+    def _explain_commodification_risk(self, commodification_type: str) -> str:
+        explanations = {
+            'ai_training': "Your data is being used to train AI models without clear consent or compensation.",
+            'behavioral_profiling': "Your behavior patterns are being analyzed to create detailed profiles for targeting.",
+            'data_resale': "Your personal information may be sold or licensed to third parties for profit.",
+            'perpetual_rights': "The company claims permanent, irrevocable rights to your content and data."
+        }
+        return explanations.get(commodification_type, "Unknown data commodification detected.")
+    
+    def _assess_manipulation_severity(self, score: int) -> str:
+        if score >= 80: return "Extreme manipulation detected"
+        elif score >= 60: return "High manipulation risk"
+        elif score >= 40: return "Moderate manipulation present"
+        elif score >= 20: return "Some manipulative elements"
+        else: return "Minimal manipulation detected"
+    
+    def _assess_commodification_level(self, risk_score: int) -> str:
+        if risk_score >= 80: return "Extensive data commodification"
+        elif risk_score >= 60: return "Significant monetization of user data"
+        elif risk_score >= 40: return "Moderate data commercialization"
+        elif risk_score >= 20: return "Limited data monetization"
+        else: return "Minimal data commodification"
+    
+    def _calculate_power_risk_weighted(self, power_analysis: Dict) -> float:
+        """Calculate power risk with weighted damage assessment"""
+        company_power = power_analysis.get('company_power_percentage', 70)
+        control_mechanisms = power_analysis.get('control_mechanisms_detected', 0)
+        
+        # Higher company power = higher risk
+        power_risk = (company_power - 50) * 1.2 if company_power > 50 else 0
+        
+        # Multiple control mechanisms compound the risk
+        mechanism_risk = control_mechanisms * 5
+        
+        return min(100, power_risk + mechanism_risk)
+    
+    def _calculate_structural_risk_weighted(self, structural_analysis: Dict) -> float:
+        """Calculate structural risk with weighted damage assessment"""
+        return structural_analysis.get('friction_score', 0)
+    
+    def _get_persona_risk_modifier(self, persona: str) -> float:
+        """Get persona-specific risk modifiers"""
+        modifiers = {
+            'individual_user': 10,    # Higher vulnerability
+            'business_user': 5,       # Some protection
+            'developer': 8,           # Technical awareness but still vulnerable
+            'healthcare': 15          # Highest sensitivity
+        }
+        return modifiers.get(persona, 10)
+    
+    def _determine_risk_level(self, score: float) -> str:
+        if score >= 80: return "critical"
+        elif score >= 60: return "high"
+        elif score >= 40: return "medium"
+        else: return "low"
+    
+    def _get_risk_assessment(self, score: float) -> str:
+        if score >= 80: return "Critical Risk - Avoid if possible"
+        elif score >= 60: return "High Risk - Proceed with extreme caution"
+        elif score >= 40: return "Moderate Risk - Review carefully"
+        else: return "Acceptable Risk - Standard precautions apply"
+    
+    def _identify_high_damage_clauses(self, power_analysis: Dict, structural_analysis: Dict, commodification_analysis: Dict) -> List[str]:
+        """Identify the most damaging clauses"""
+        high_damage = []
+        
+        # Check for critical power imbalances
+        power_breakdown = power_analysis.get('power_control_breakdown', {})
+        for control_type, data in power_breakdown.items():
+            if data.get('impact_assessment') == 'critical':
+                high_damage.append(f"Critical power imbalance: {control_type}")
+        
+        # Check for high-damage structural patterns
+        structural_patterns = structural_analysis.get('structural_patterns_detected', {})
+        for pattern_type, data in structural_patterns.items():
+            if data.get('damage_level') == 'critical':
+                high_damage.append(f"Critical structural manipulation: {pattern_type}")
+        
+        # Check for data commodification
+        commodity_patterns = commodification_analysis.get('commodification_patterns', {})
+        for commodity_type, data in commodity_patterns.items():
+            if data.get('commodification_type') in ['ai_training', 'data_resale']:
+                high_damage.append(f"Data commodification: {commodity_type}")
+        
+        return high_damage
+    
+    def _identify_critical_issues_weighted(self, power_analysis: Dict, structural_analysis: Dict, commodification_analysis: Dict) -> List[str]:
+        """Identify critical issues using weighted assessment"""
+        issues = []
+        
+        if power_analysis.get('digital_dictatorship'):
+            issues.append("Digital dictatorship detected - extreme power imbalance")
+        
+        if commodification_analysis.get('ai_training_detected'):
+            issues.append("AI training on user data without clear consent")
+        
+        if structural_analysis.get('manipulation_score', 0) > 60:
+            issues.append("High structural manipulation score")
+        
+        return issues
+    
+    # Placeholder methods for flag explanations (can be expanded)
+    def _explain_power_flag(self, control_type: str, clause: Dict) -> str:
+        return f"Power imbalance detected in {control_type}: {clause.get('power_holder', 'unknown')} holds control"
+    
+    def _rate_flag_risk(self, severity: str) -> int:
+        ratings = {'critical': 10, 'high': 8, 'medium': 5, 'low': 2}
+        return ratings.get(severity, 5)
+    
+    def _describe_user_impact(self, control_type: str, clause: Dict) -> str:
+        return f"This clause affects user {control_type} rights and control"
+    
+    def _suggest_mitigation(self, control_type: str) -> str:
+        return f"Consider negotiating {control_type} terms or seeking alternatives"
+    
+    def _explain_structural_flag(self, pattern_type: str, clause: Dict) -> str:
+        return f"Structural dark pattern detected: {pattern_type}"
+    
+    def _describe_structural_impact(self, pattern_type: str, clause: Dict) -> str:
+        return f"This creates {pattern_type} barriers for users"
+    
+    def _suggest_structural_mitigation(self, pattern_type: str) -> str:
+        return f"Be aware of {pattern_type} when using the service"
+    
+    def _determine_commodification_severity(self, commodity_type: str) -> str:
+        severity_map = {
+            'ai_training': 'critical',
+            'data_resale': 'critical', 
+            'behavioral_profiling': 'high',
+            'perpetual_rights': 'high'
+        }
+        return severity_map.get(commodity_type, 'medium')
+    
+    def _describe_commodification_impact(self, commodity_type: str, clause: Dict) -> str:
+        return f"Your data may be used for {commodity_type} without your control"
+    
+    def _suggest_commodification_mitigation(self, commodity_type: str) -> str:
+        return f"Seek services that don't engage in {commodity_type} of user data"
+    
+    def _generate_flag_summary(self, flag_categories: Dict) -> str:
+        critical_count = len(flag_categories['critical'])
+        high_count = len(flag_categories['high'])
+        
+        if critical_count > 0:
+            return f"{critical_count} critical and {high_count} high-risk flags detected"
+        elif high_count > 0:
+            return f"{high_count} high-risk flags detected"
+        else:
+            return "No critical issues detected"
+    
+    def _recommend_action_based_on_flags(self, flag_categories: Dict) -> str:
+        critical_count = len(flag_categories['critical'])
+        high_count = len(flag_categories['high'])
+        
+        if critical_count > 2:
+            return "Strong recommendation: Avoid this service due to multiple critical issues"
+        elif critical_count > 0:
+            return "Caution: Critical issues detected, proceed with extreme care"
+        elif high_count > 3:
+            return "Warning: Multiple high-risk issues, consider alternatives"
+        else:
+            return "Acceptable with standard precautions"
