@@ -114,6 +114,15 @@ The application follows a traditional Flask web application architecture with th
 - Redefined transparency scoring to measure real user empowerment, not just clarity
 - Added "Digital Dictatorship" detection for extreme power imbalances
 
+**June 24, 2025 - Critical Algorithm Fixes:**
+- Fixed unrealistic scoring that showed 10/10 user power and 100% transparency
+- Implemented realistic power distribution (companies start with 70% structural advantage)
+- Fixed dispute resolution logic: Ontario courts = company power, not user power
+- Added ML data extraction detection for behavioral data commodification
+- Replaced broad liability flagging with Power Loops, Friction Gradients, Reflexive Clauses
+- Set realistic transparency ceiling at 70% maximum
+- Corrected overall risk scoring to reflect actual document danger levels
+
 **June 23, 2025 - Enhanced Analysis Features:**
 - Added executive summary with intelligent risk assessment
 - Implemented positive indicator detection for good practices

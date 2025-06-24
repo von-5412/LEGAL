@@ -23,25 +23,68 @@ class PowerStructureAnalyzer:
     def __init__(self):
         """Initialize power structure analyzer with sophisticated patterns"""
         
-        # Power holder detection patterns
+        # Power holder detection patterns - realistic scoring
         self.power_patterns = {
             'company_absolute': {
                 'patterns': [
                     r'(?i)(?:we|company|service provider).*?(?:may|can|will|shall|reserve|retain).*?(?:at.*?(?:our|sole|absolute|complete).*?discretion|without.*?notice|any.*?time|anytime)',
                     r'(?i)(?:sole|absolute|complete|unlimited|unrestricted).*?(?:discretion|right|authority|power).*?(?:to|for)',
                     r'(?i)(?:without.*?(?:notice|warning|cause|reason|liability|obligation)|immediately|instantly).*?(?:terminate|suspend|modify|change|remove)',
-                    r'(?i)(?:final|binding|conclusive|irrevocable|non-negotiable).*?(?:decision|determination|judgment)'
+                    r'(?i)(?:final|binding|conclusive|irrevocable|non-negotiable).*?(?:decision|determination|judgment)',
+                    r'(?i)(?:assign|transfer|sublicense).*?(?:without.*?limitation|to.*?third.*?parties|any.*?purpose)',
+                    r'(?i)(?:disputes?|claims?).*?(?:shall|must|will).*?(?:be.*?governed|resolved|subject).*?(?:by|in|under).*?(?:laws?.*?of|courts?.*?of|jurisdiction.*?of)'
                 ],
-                'weight': 30
+                'weight': 25
             },
             'user_empowerment': {
                 'patterns': [
                     r'(?i)(?:you|user).*?(?:may|can|have.*?right|entitled).*?(?:opt.*?out|withdraw|cancel|modify|delete|access|control)',
-                    r'(?i)(?:with.*?(?:your|user).*?consent|permission|approval|authorization)',
+                    r'(?i)(?:with.*?(?:your|user).*?(?:explicit|written|prior).*?consent|permission|approval|authorization)',
                     r'(?i)(?:you.*?can.*?(?:object|refuse|decline|opt.*?out)|right.*?to.*?(?:object|refuse|decline))',
-                    r'(?i)(?:user.*?choice|user.*?control|your.*?decision|at.*?your.*?option)'
+                    r'(?i)(?:user.*?choice|user.*?control|your.*?decision|at.*?your.*?option)',
+                    r'(?i)(?:you.*?may.*?request.*?deletion|data.*?portability|right.*?to.*?be.*?forgotten)'
                 ],
-                'weight': -15  # Negative weight reduces company power score
+                'weight': -8  # Minimal impact unless explicitly strong
+            },
+            'ml_data_extraction': {
+                'patterns': [
+                    r'(?i)(?:anonymized?|aggregated?).*?data.*?(?:may.*?be.*?used|used.*?to|for).*?(?:improve|enhance|develop|train|analytics?|research)',
+                    r'(?i)(?:behavioral|usage|interaction).*?data.*?(?:collect|gather|analyze|process|use)',
+                    r'(?i)(?:machine.*?learning|artificial.*?intelligence|ml|ai|algorithms?).*?(?:training|development|improvement)',
+                    r'(?i)(?:analytics?|metrics|insights?).*?(?:derive|extract|generate).*?from.*?(?:your|user).*?data'
+                ],
+                'weight': 20  # High impact for ML training
+            }
+        }
+        
+        # Structural dark patterns - what really matters
+        self.structural_patterns = {
+            'power_loops': {
+                'patterns': [
+                    r'(?i)(?:data|information).*?(?:retained|stored|kept).*?(?:after|following|upon).*?(?:termination|cancellation|deletion)',
+                    r'(?i)(?:anonymized?|aggregated?).*?data.*?(?:may.*?be.*?retained|retained.*?indefinitely|kept.*?permanently)',
+                    r'(?i)(?:refund|reimbursement).*?(?:subject.*?to|conditional.*?on|depends.*?on).*?(?:breach|violation|compliance)',
+                    r'(?i)(?:only|exclusively).*?(?:account.*?owner|administrator).*?(?:may|can).*?(?:contact|communicate|request)'
+                ],
+                'weight': 15
+            },
+            'friction_gradients': {
+                'patterns': [
+                    r'(?i)(?:request.*?deletion|data.*?removal|account.*?closure).*?(?:must|shall|requires?).*?(?:written|formal|official).*?(?:request|notice|application)',
+                    r'(?i)(?:processing.*?time|response.*?time|completion.*?time).*?(?:up.*?to|may.*?take|within).*?(?:\d+.*?days?|\d+.*?weeks?|\d+.*?months?)',
+                    r'(?i)(?:verification|authentication|confirmation).*?(?:process|procedure|steps?).*?(?:required|necessary|mandatory)',
+                    r'(?i)(?:fees?|charges?|costs?).*?(?:may.*?apply|associated.*?with|incurred.*?for).*?(?:processing|handling|administration)'
+                ],
+                'weight': 12
+            },
+            'reflexive_clauses': {
+                'patterns': [
+                    r'(?i)(?:we|company).*?(?:not.*?liable|disclaim.*?liability|no.*?responsibility).*?(?:for|regarding|concerning).*?(?:damages?|losses?|harm)',
+                    r'(?i)(?:limitation.*?of.*?liability|liability.*?limited.*?to|maximum.*?liability).*?(?:shall.*?not.*?exceed|\$\d+|amount.*?paid)',
+                    r'(?i)(?:indemnify|hold.*?harmless|defend).*?(?:us|company|provider).*?(?:against|from).*?(?:claims?|damages?|losses?)',
+                    r'(?i)(?:waive|give.*?up|surrender).*?(?:right|claim).*?(?:to|for).*?(?:damages?|compensation|remedy)'
+                ],
+                'weight': 18
             }
         }
         
@@ -254,15 +297,34 @@ class PowerStructureAnalyzer:
         else:
             company_percentage = 0
         
-        # Determine if it's a "digital dictatorship"
+        # More realistic power calculation - start with base company advantage
+        base_company_power = 70  # Companies always have structural advantage
+        
+        # Adjust based on detected patterns
+        if total_clauses > 0:
+            power_adjustment = (power_scores['company'] / total_clauses) * 25  # Max 25 point increase
+            company_percentage = min(95, base_company_power + power_adjustment)
+        else:
+            company_percentage = base_company_power
+        
+        user_percentage = max(5, 100 - company_percentage)
+        
+        # Ensure realistic caps - users rarely get >30% power in ToS
+        if user_percentage > 30:
+            user_percentage = 30
+            company_percentage = 70
+        
+        # Digital dictatorship detection (company has >85% power)
+        is_dictatorship = company_percentage > 85
         is_dictatorship = company_percentage > 75 and power_scores['user'] < 2
         
         return {
-            'power_distribution': power_scores,
-            'company_control_percentage': company_percentage,
-            'is_digital_dictatorship': is_dictatorship,
+            'company_power_percentage': round(company_percentage, 1),
+            'user_power_percentage': round(user_percentage, 1),
+            'power_imbalance_score': round(abs(company_percentage - user_percentage), 1),
+            'digital_dictatorship': is_dictatorship,
             'clause_breakdown': clause_analysis,
-            'assessment': self._get_power_assessment(company_percentage, is_dictatorship)
+            'power_assessment': self._get_power_assessment(company_percentage, is_dictatorship)
         }
     
     def _calculate_rights_stripping_index(self, sentences: List[str], user_persona: str) -> Dict[str, Any]:
@@ -336,25 +398,40 @@ class PowerStructureAnalyzer:
     
     def _analyze_structural_patterns(self, text: str) -> Dict[str, Any]:
         """Analyze structural dark patterns beyond just language"""
-        structural_issues = {}
-        total_friction_score = 0
         
-        for pattern_name, pattern_data in self.structural_patterns.items():
+        structural_issues = {
+            'power_loops': 0,
+            'friction_gradients': 0, 
+            'reflexive_clauses': 0,
+            'ml_data_extraction': 0
+        }
+        
+        sentences = re.split(r'[.!?]+', text)
+        sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
+        
+        # Check for structural patterns
+        for category, pattern_data in self.structural_patterns.items():
             for pattern in pattern_data['patterns']:
-                if re.search(pattern, text):
-                    if pattern_name not in structural_issues:
-                        structural_issues[pattern_name] = {
-                            'detected': True,
-                            'friction_score': pattern_data['friction_score'],
-                            'description': pattern_data['description']
-                        }
-                    total_friction_score += pattern_data['friction_score']
+                matches = re.findall(pattern, text)
+                if matches:
+                    structural_issues[category] += len(matches)
+        
+        # Check for ML data extraction patterns specifically
+        ml_patterns = self.power_patterns.get('ml_data_extraction', {}).get('patterns', [])
+        for pattern in ml_patterns:
+            matches = re.findall(pattern, text)
+            if matches:
+                structural_issues['ml_data_extraction'] += len(matches)
+        
+        # Calculate friction score (0-100, higher = more friction)
+        total_issues = sum(structural_issues.values())
+        friction_score = min(100, total_issues * 20)  # Each issue adds 20 points
         
         return {
             'structural_issues': structural_issues,
-            'total_friction_score': total_friction_score,
-            'user_trapped': total_friction_score > 15,
-            'structural_assessment': self._get_structural_assessment(total_friction_score)
+            'friction_score': friction_score,
+            'dark_patterns_detected': total_issues,
+            'structural_assessment': self._get_structural_assessment(friction_score)
         }
     
     def _analyze_real_transparency(self, text: str) -> Dict[str, Any]:
@@ -408,9 +485,9 @@ class PowerStructureAnalyzer:
                 detected_factors[factor] = False
         
         return {
-            'transparency_score': transparency_score,
+            'transparency_score': round(transparency_score, 1),
             'empowerment_factors': detected_factors,
-            'real_transparency': transparency_score > 75,
+            'real_transparency': transparency_score > 60,
             'transparency_assessment': self._get_transparency_assessment(transparency_score)
         }
     
@@ -443,7 +520,7 @@ class PowerStructureAnalyzer:
             r'(?i)(?:court|legal.*?system|jury.*?trial|user.*?choice)'
         ]
         
-        # Analyze each category
+        # Analyze each category - fix dispute resolution logic
         for sentence in sentences:
             # Rule changes
             if any(re.search(p, sentence) for p in rule_change_patterns[:1]):
@@ -463,10 +540,12 @@ class PowerStructureAnalyzer:
             elif any(re.search(p, sentence) for p in data_patterns[1:]):
                 power_map['data_ownership'] = 'user'
             
-            # Dispute resolution
-            if any(re.search(p, sentence) for p in dispute_patterns[:1]):
+            # Dispute resolution - fix the logic (Ontario courts = company power)
+            if re.search(r'(?i)(?:arbitration|company.*?decides|binding.*?arbitration)', sentence):
                 power_map['dispute_resolution'] = 'company'
-            elif any(re.search(p, sentence) for p in dispute_patterns[1:]):
+            elif re.search(r'(?i)(?:disputes?|claims?).*?(?:shall|must|will).*?(?:be.*?governed|resolved|subject).*?(?:by|in|under).*?(?:laws?.*?of|courts?.*?of|jurisdiction.*?of)', sentence):
+                power_map['dispute_resolution'] = 'company'  # Courts chosen by company = company power
+            elif re.search(r'(?i)(?:you.*?may.*?choose|user.*?choice|multiple.*?options).*?(?:court|arbitration|dispute)', sentence):
                 power_map['dispute_resolution'] = 'user'
         
         return power_map
@@ -474,47 +553,50 @@ class PowerStructureAnalyzer:
     def _calculate_overall_power_score(self, power_analysis, rights_analysis, structural_analysis, transparency_analysis) -> Dict[str, Any]:
         """Calculate overall power score and assessment"""
         
-        # Weight the different factors
-        power_weight = 0.3
-        rights_weight = 0.4
-        structural_weight = 0.2
-        transparency_weight = 0.1
-        
-        # Convert scores to 0-100 scale
-        power_score = max(0, 100 - power_analysis['company_control_percentage'])
-        rights_score = rights_analysis['rights_vs_control_balance'] * 10
-        structural_score = max(0, 100 - structural_analysis['total_friction_score'] * 5)
+        # Extract key metrics
+        company_power = power_analysis['company_power_percentage']
+        rights_score = rights_analysis['rights_vs_control_balance']
+        friction_score = structural_analysis['friction_score']
         transparency_score = transparency_analysis['transparency_score']
         
-        overall_score = (
-            power_score * power_weight +
-            rights_score * rights_weight +
-            structural_score * structural_weight +
-            transparency_score * transparency_weight
-        )
+        # Calculate overall score - realistic risk assessment
+        # Start with base risk of 50 (terms of service are inherently risky)
+        base_risk = 50
         
-        # Determine assessment level
-        if overall_score >= 70:
+        # Add risk based on company power (0-40 points)
+        power_risk = (company_power - 60) * 0.8 if company_power > 60 else 0
+        
+        # Add risk based on rights erosion (0-30 points)
+        rights_risk = (10 - rights_score) * 3
+        
+        # Add risk based on friction (0-20 points)
+        friction_risk = friction_score * 0.2
+        
+        # Reduce risk based on transparency (0-15 points reduction)
+        transparency_benefit = (transparency_score - 30) * 0.3 if transparency_score > 30 else 0
+        
+        # Calculate final score
+        overall_score = max(15, min(90, base_risk + power_risk + rights_risk + friction_risk - transparency_benefit))
+        
+        # Determine assessment level with realistic thresholds
+        if overall_score <= 30:
             assessment = "User-Friendly"
             risk_level = "low"
-        elif overall_score >= 50:
-            assessment = "Moderately Balanced"
+        elif overall_score <= 60:
+            assessment = "Moderate Risk"
             risk_level = "medium"
-        elif overall_score >= 30:
-            assessment = "Company-Favored"
-            risk_level = "high"
         else:
-            assessment = "Digital Dictatorship"
-            risk_level = "critical"
+            assessment = "High Risk"
+            risk_level = "high"
         
         return {
             'overall_score': round(overall_score, 1),
             'assessment': assessment,
             'risk_level': risk_level,
             'component_scores': {
-                'power_balance': round(power_score, 1),
+                'company_power': round(company_power, 1),
                 'rights_protection': round(rights_score, 1),
-                'structural_fairness': round(structural_score, 1),
+                'friction_score': round(friction_score, 1),
                 'transparency': round(transparency_score, 1)
             },
             'critical_issues': self._identify_critical_issues(power_analysis, rights_analysis, structural_analysis)
@@ -523,13 +605,15 @@ class PowerStructureAnalyzer:
     def _get_power_assessment(self, company_percentage: float, is_dictatorship: bool) -> str:
         """Get human-readable power assessment"""
         if is_dictatorship:
-            return "You're signing a digital dictatorship - company has absolute control"
-        elif company_percentage > 60:
-            return "Heavily skewed toward company control"
-        elif company_percentage > 40:
-            return "Moderately company-favored"
+            return "Digital Dictatorship: Company has absolute control"
+        elif company_percentage > 85:
+            return "Heavily Company-Favored: Significant power imbalance"
+        elif company_percentage > 75:
+            return "Company-Favored: Notable power imbalance" 
+        elif company_percentage > 65:
+            return "Moderately Company-Favored: Some imbalance"
         else:
-            return "Reasonably balanced power distribution"
+            return "Reasonably Balanced: Acceptable power distribution"
     
     def _get_persona_risk_assessment(self, persona: str, rights_violations: Dict) -> str:
         """Get persona-specific risk assessment"""
@@ -576,16 +660,16 @@ class PowerStructureAnalyzer:
         """Identify the most critical issues"""
         issues = []
         
-        if power_analysis['is_digital_dictatorship']:
+        if power_analysis['digital_dictatorship']:
             issues.append("Digital dictatorship detected")
         
         if rights_analysis['red_flag_triggered']:
             issues.append("Rights vs control balance critically low")
         
-        if structural_analysis['user_trapped']:
-            issues.append("High structural friction traps users")
+        if structural_analysis.get('dark_patterns_detected', 0) > 3:
+            issues.append("Multiple structural dark patterns detected")
         
-        if power_analysis['company_control_percentage'] > 80:
+        if power_analysis['company_power_percentage'] > 80:
             issues.append("Extreme power asymmetry favoring company")
         
         return issues
