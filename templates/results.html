@@ -496,7 +496,7 @@
                                 <li class="flag-item {{ flag.type }} severity-{{ flag.severity }}">
                                     <div class="flag-header">
                                         <strong>{{ flag.category.replace('_', ' ').title() }}</strong>
-                                        <span class="severity-badge severity-{{ flag.severity }}">{{ flag.severity.upper() }}</span>
+                                        <span class="severity-badge severity-{{ flag.get('severity', 'medium') }}">{{ flag.get('severity', 'medium').upper() }}</span>
                                     </div>
                                     <div class="flag-description">{{ flag.description }}</div>
                                     {% if flag.text %}
