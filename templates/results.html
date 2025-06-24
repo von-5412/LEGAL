@@ -462,12 +462,30 @@
                         The following sections contain potentially problematic clauses:
                     </p>
 
+                    <div class="flagged-sections-container">
                     {% for section in analysis_data.flagged_sections %}
-                    <div class="flagged-section">
+                    <div class="flagged-section section-severity-{{ section.section_severity }}">
                         <div class="flagged-section-header">
-                            <h4 class="mb-0">Section {{ loop.index }}</h4>
-                            <span class="flag-count">{{ section.flag_count }} issue{{ 's' if section.flag_count != 1 else '' }}</span>
+                            <div class="section-title-container">
+                                <h4 class="mb-0">{{ section.section_title }}</h4>
+                                <span class="section-number">Section {{ section.section_number }}</span>
+                            </div>
+                            <div class="section-risk-indicators">
+                                <span class="flag-count">{{ section.flag_count }} issue{{ 's' if section.flag_count != 1 else '' }}</span>
+                                <span class="risk-score">Risk: {{ section.section_risk_score }}</span>
+                            </div>
                         </div>
+
+                        <div class="danger-summary">{{ section.danger_summary }}</div>
+
+                        {% if section.critical_issues %}
+                        <div class="critical-issues-alert">
+                            <strong>⚠️ Critical Issues:</strong>
+                            {% for issue in section.critical_issues %}
+                                <span class="critical-issue-tag">{{ issue.replace('_', ' ').title() }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
 
                         <div class="section-text">{{ section.text }}</div>
 
@@ -475,12 +493,15 @@
                             <h5 class="h6 mb-2">Issues Found:</h5>
                             <ul class="flag-list">
                                 {% for flag in section.flags %}
-                                <li class="flag-item {{ flag.type }}">
-                                    <strong>{{ flag.category.replace('_', ' ').title() }}:</strong>
-                                    {{ flag.description }}
+                                <li class="flag-item {{ flag.type }} severity-{{ flag.severity }}">
+                                    <div class="flag-header">
+                                        <strong>{{ flag.category.replace('_', ' ').title() }}</strong>
+                                        <span class="severity-badge severity-{{ flag.severity }}">{{ flag.severity.upper() }}</span>
+                                    </div>
+                                    <div class="flag-description">{{ flag.description }}</div>
                                     {% if flag.text %}
-                                    <div class="small text-muted mt-1">
-                                        <em>"{{ flag.text[:100] }}{{ '...' if flag.text|length > 100 else '' }}"</em>
+                                    <div class="flag-quote">
+                                        <em>"{{ flag.text[:150] }}{{ '...' if flag.text|length > 150 else '' }}"</em>
                                     </div>
                                     {% endif %}
                                 </li>

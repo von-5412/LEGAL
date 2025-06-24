@@ -211,38 +211,69 @@ class TOSAnalyzer:
             return ""
     
     def chunk_text(self, text: str) -> List[Dict]:
-        """Chunk text into sections for analysis"""
-        # Split by common section headers
+        """Chunk text into sections for analysis with enhanced section detection"""
+        # Enhanced section patterns for better document structure detection
         section_patterns = [
-            r'(?i)^\s*\d+\.\s+',  # Numbered sections
+            r'(?i)^\s*\d+\.\s+',  # Numbered sections (1. 2. 3.)
             r'(?i)^\s*[A-Z][A-Z\s]+\s*$',  # ALL CAPS headers
-            r'(?i)^\s*(privacy|data|terms|conditions|liability|arbitration|termination)',
+            r'(?i)^\s*(privacy|data|terms|conditions|liability|arbitration|termination|dispute|account|service|user|content|intellectual|payment|billing)',
+            r'(?i)^\s*\d+\.\d+\s+',  # Subsections (1.1, 1.2)
+            r'(?i)^\s*[a-z]\)\s+',  # Lettered subsections (a) b) c))
+            r'(?i)^\s*\([a-z]\)\s+',  # Parenthetical subsections (a) (b) (c))
         ]
         
         chunks = []
         current_chunk = ""
+        current_section_title = "Introduction"
+        section_number = 0
         lines = text.split('\n')
         
-        for line in lines:
+        for line_idx, line in enumerate(lines):
             is_header = any(re.match(pattern, line.strip()) for pattern in section_patterns)
             
             if is_header and current_chunk.strip():
+                section_number += 1
                 chunks.append({
                     'text': current_chunk.strip(),
-                    'start_pos': sum(len(c['text']) for c in chunks) if chunks else 0
+                    'section_title': current_section_title,
+                    'section_number': section_number,
+                    'start_pos': sum(len(c['text']) for c in chunks) if chunks else 0,
+                    'line_start': line_idx - current_chunk.count('\n'),
+                    'line_end': line_idx
                 })
                 current_chunk = line + '\n'
+                current_section_title = self._extract_section_title(line.strip())
             else:
                 current_chunk += line + '\n'
         
         # Add the last chunk
         if current_chunk.strip():
+            section_number += 1
             chunks.append({
                 'text': current_chunk.strip(),
-                'start_pos': sum(len(c['text']) for c in chunks) if chunks else 0
+                'section_title': current_section_title,
+                'section_number': section_number,
+                'start_pos': sum(len(c['text']) for c in chunks) if chunks else 0,
+                'line_start': len(lines) - current_chunk.count('\n'),
+                'line_end': len(lines)
             })
         
-        return chunks if chunks else [{'text': text, 'start_pos': 0}]
+        return chunks if chunks else [{'text': text, 'section_title': 'Full Document', 'section_number': 1, 'start_pos': 0, 'line_start': 0, 'line_end': len(text.split('\n'))}]
+    
+    def _extract_section_title(self, header_line: str) -> str:
+        """Extract meaningful section title from header line"""
+        # Remove common prefixes and clean up
+        title = re.sub(r'^\s*\d+\.\s*', '', header_line)  # Remove "1. "
+        title = re.sub(r'^\s*\d+\.\d+\s*', '', title)     # Remove "1.1 "
+        title = re.sub(r'^\s*[a-z]\)\s*', '', title)      # Remove "a) "
+        title = re.sub(r'^\s*\([a-z]\)\s*', '', title)    # Remove "(a) "
+        
+        # If it's too long, take first meaningful part
+        if len(title) > 50:
+            words = title.split()[:6]  # First 6 words
+            title = ' '.join(words) + ('...' if len(title.split()) > 6 else '')
+        
+        return title.strip() or "Untitled Section"
     
     def analyze_text(self, text: str) -> Dict:
         """Analyze text for risks and dark patterns"""
@@ -299,10 +330,13 @@ class TOSAnalyzer:
         except ImportError:
             logging.warning("Enhanced pattern analyzer not available")
         
-        # Analyze each chunk for risk patterns
+        # Analyze each chunk for risk patterns with section-level context
+        section_analyses = []
         for chunk_idx, chunk in enumerate(chunks):
             chunk_text = chunk['text']
             chunk_flags = []
+            section_risk_score = 0
+            critical_issues_in_section = []
             
             # Check risk patterns
             for category, data in self.risk_patterns.items():
@@ -317,23 +351,38 @@ class TOSAnalyzer:
                             'count': 0,
                             'weight': data['weight'],
                             'description': data['description'],
-                            'matches': []
+                            'matches': [],
+                            'sections_found': []
                         }
                     
                     risk_breakdown[category]['count'] += len(matches)
+                    risk_breakdown[category]['sections_found'].append({
+                        'section_number': chunk.get('section_number', chunk_idx + 1),
+                        'section_title': chunk.get('section_title', f'Section {chunk_idx + 1}'),
+                        'match_count': len(matches)
+                    })
+                    
                     for match in matches:
                         risk_breakdown[category]['matches'].append({
                             'text': match.group(),
                             'start': match.start(),
                             'end': match.end(),
-                            'chunk_index': chunk_idx
+                            'chunk_index': chunk_idx,
+                            'section_title': chunk.get('section_title', f'Section {chunk_idx + 1}')
                         })
                         chunk_flags.append({
                             'type': 'risk',
                             'category': category,
                             'text': match.group(),
-                            'description': data['description']
+                            'description': data['description'],
+                            'severity': self._get_risk_severity(category),
+                            'weight': data['weight']
                         })
+                        section_risk_score += data['weight']
+                        
+                        # Track critical issues per section
+                        if data['weight'] >= 20:  # Critical threshold
+                            critical_issues_in_section.append(category)
             
             # Check dark patterns
             for pattern_type, patterns in self.dark_patterns.items():
@@ -346,23 +395,34 @@ class TOSAnalyzer:
                     if pattern_type not in dark_patterns_found:
                         dark_patterns_found[pattern_type] = {
                             'count': 0,
-                            'matches': []
+                            'matches': [],
+                            'sections_found': []
                         }
                     
                     dark_patterns_found[pattern_type]['count'] += len(matches)
+                    dark_patterns_found[pattern_type]['sections_found'].append({
+                        'section_number': chunk.get('section_number', chunk_idx + 1),
+                        'section_title': chunk.get('section_title', f'Section {chunk_idx + 1}'),
+                        'match_count': len(matches)
+                    })
+                    
                     for match in matches:
                         dark_patterns_found[pattern_type]['matches'].append({
                             'text': match.group(),
                             'start': match.start(),
                             'end': match.end(),
-                            'chunk_index': chunk_idx
+                            'chunk_index': chunk_idx,
+                            'section_title': chunk.get('section_title', f'Section {chunk_idx + 1}')
                         })
                         chunk_flags.append({
                             'type': 'dark_pattern',
                             'category': pattern_type,
                             'text': match.group(),
-                            'description': f"Potentially manipulative: {pattern_type.replace('_', ' ')}"
+                            'description': f"Potentially manipulative: {pattern_type.replace('_', ' ')}",
+                            'severity': 'high',
+                            'weight': 15
                         })
+                        section_risk_score += 15
             
             # Check positive indicators
             for pattern_type, patterns in self.positive_patterns.items():
@@ -375,24 +435,54 @@ class TOSAnalyzer:
                     if pattern_type not in positive_indicators:
                         positive_indicators[pattern_type] = {
                             'count': 0,
-                            'matches': []
+                            'matches': [],
+                            'sections_found': []
                         }
                     
                     positive_indicators[pattern_type]['count'] += len(matches)
+                    positive_indicators[pattern_type]['sections_found'].append({
+                        'section_number': chunk.get('section_number', chunk_idx + 1),
+                        'section_title': chunk.get('section_title', f'Section {chunk_idx + 1}'),
+                        'match_count': len(matches)
+                    })
+                    
                     for match in matches:
                         positive_indicators[pattern_type]['matches'].append({
                             'text': match.group(),
                             'start': match.start(),
                             'end': match.end(),
-                            'chunk_index': chunk_idx
+                            'chunk_index': chunk_idx,
+                            'section_title': chunk.get('section_title', f'Section {chunk_idx + 1}')
                         })
+                        section_risk_score -= 5  # Positive indicators reduce section risk
+            
+            # Calculate section-level severity
+            section_severity = self._calculate_section_severity(section_risk_score, critical_issues_in_section, chunk_flags)
+            
+            # Store section analysis
+            section_analysis = {
+                'section_number': chunk.get('section_number', chunk_idx + 1),
+                'section_title': chunk.get('section_title', f'Section {chunk_idx + 1}'),
+                'section_risk_score': section_risk_score,
+                'section_severity': section_severity,
+                'critical_issues': critical_issues_in_section,
+                'total_flags': len(chunk_flags),
+                'flag_breakdown': self._categorize_section_flags(chunk_flags)
+            }
+            section_analyses.append(section_analysis)
             
             if chunk_flags:
                 flagged_sections.append({
                     'chunk_index': chunk_idx,
+                    'section_number': chunk.get('section_number', chunk_idx + 1),
+                    'section_title': chunk.get('section_title', f'Section {chunk_idx + 1}'),
+                    'section_severity': section_severity,
+                    'section_risk_score': section_risk_score,
                     'text': chunk_text[:500] + ('...' if len(chunk_text) > 500 else ''),
                     'flags': chunk_flags,
-                    'flag_count': len(chunk_flags)
+                    'flag_count': len(chunk_flags),
+                    'critical_issues': critical_issues_in_section,
+                    'danger_summary': self._generate_section_danger_summary(section_severity, critical_issues_in_section)
                 })
                 total_flags += len(chunk_flags)
         
@@ -423,6 +513,8 @@ class TOSAnalyzer:
             'dark_patterns': dark_patterns_found,
             'positive_indicators': merged_positive_indicators,
             'flagged_sections': flagged_sections,
+            'section_analyses': section_analyses,
+            'most_dangerous_sections': self._identify_most_dangerous_sections(section_analyses),
             'transparency_score': int(transparency_score),
             'total_flags': total_flags,
             'text_length': len(text),
@@ -438,6 +530,64 @@ class TOSAnalyzer:
             },
             **readability_metrics
         }
+    
+    def _get_risk_severity(self, category: str) -> str:
+        """Map risk categories to severity levels"""
+        severity_map = {
+            'data_sharing': 'critical',
+            'arbitration_waiver': 'critical', 
+            'unilateral_changes': 'high',
+            'account_suspension': 'high',
+            'broad_liability_waiver': 'medium',
+            'consent_by_default': 'medium'
+        }
+        return severity_map.get(category, 'medium')
+    
+    def _calculate_section_severity(self, risk_score: int, critical_issues: List[str], flags: List[Dict]) -> str:
+        """Calculate overall severity for a section based on cumulative risk"""
+        critical_count = len(critical_issues)
+        high_risk_flags = len([f for f in flags if f.get('severity') in ['critical', 'high']])
+        
+        # Critical section criteria
+        if critical_count >= 2:  # Multiple critical issues
+            return 'critical'
+        elif risk_score >= 50:  # High cumulative risk
+            return 'critical'
+        elif critical_count >= 1 or high_risk_flags >= 3:
+            return 'high'
+        elif risk_score >= 25 or high_risk_flags >= 1:
+            return 'medium'
+        else:
+            return 'low'
+    
+    def _categorize_section_flags(self, flags: List[Dict]) -> Dict:
+        """Categorize flags within a section by severity"""
+        categorized = {'critical': [], 'high': [], 'medium': [], 'low': []}
+        for flag in flags:
+            severity = flag.get('severity', 'medium')
+            categorized[severity].append(flag)
+        return categorized
+    
+    def _generate_section_danger_summary(self, severity: str, critical_issues: List[str]) -> str:
+        """Generate human-readable danger summary for sections"""
+        if severity == 'critical':
+            if len(critical_issues) >= 2:
+                issue_names = [issue.replace('_', ' ').title() for issue in critical_issues[:2]]
+                return f"🔴 CRITICAL: {' + '.join(issue_names)} - All legal rights eliminated"
+            else:
+                return "🔴 CRITICAL: Multiple high-risk clauses present"
+        elif severity == 'high':
+            return "🟠 HIGH RISK: Significant user rights restrictions"
+        elif severity == 'medium':
+            return "🟡 MODERATE: Some concerning clauses present"
+        else:
+            return "🟢 LOW RISK: Minor issues detected"
+    
+    def _identify_most_dangerous_sections(self, section_analyses: List[Dict]) -> List[Dict]:
+        """Identify the most dangerous sections for executive summary"""
+        # Sort by risk score and return top 3 most dangerous
+        dangerous_sections = sorted(section_analyses, key=lambda s: s['section_risk_score'], reverse=True)
+        return dangerous_sections[:3]
     
     def _calculate_risk_score(self, risk_breakdown: Dict) -> int:
         """Calculate overall risk score with exponential weighting for critical issues"""

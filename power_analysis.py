@@ -985,7 +985,7 @@ class PowerStructureAnalyzer:
     
     def _generate_explanatory_flags(self, text: str, sentences: List[str], power_analysis: Dict,
                                   structural_analysis: Dict, commodification_analysis: Dict) -> Dict[str, Any]:
-        """PILLAR 5: Quote, explain, and rate every red flag clearly"""
+        """PILLAR 5: Quote, explain, and rate every red flag clearly with de-duplication"""
         
         all_flags = []
         flag_categories = {
@@ -995,57 +995,95 @@ class PowerStructureAnalyzer:
             'low': []
         }
         
-        # Extract flags from power analysis
+        # Canonical issue tracking to prevent duplicates
+        canonical_issues = {}
+        flag_deduplication = {}
+        
+        # Extract flags from power analysis with canonical IDs
         for control_type, control_data in power_analysis.get('power_control_breakdown', {}).items():
             if control_data.get('detected'):
-                for clause in control_data['clauses']:
+                canonical_id = self._get_canonical_issue_id(control_type, control_data['impact_assessment'])
+                
+                if canonical_id not in canonical_issues:
+                    # First occurrence - create the canonical flag
+                    best_clause = self._select_best_clause_example(control_data['clauses'])
                     flag = {
-                        'flag_id': f"power_{control_type}_{len(all_flags)}",
+                        'flag_id': canonical_id,
+                        'canonical_id': canonical_id,
                         'category': 'power_imbalance',
                         'severity': control_data['impact_assessment'],
-                        'quoted_text': clause['text'],
-                        'explanation': self._explain_power_flag(control_type, clause),
+                        'quoted_text': best_clause['text'],
+                        'explanation': self._explain_power_flag(control_type, best_clause),
                         'risk_rating': self._rate_flag_risk(control_data['impact_assessment']),
-                        'user_impact': self._describe_user_impact(control_type, clause),
-                        'mitigation_advice': self._suggest_mitigation(control_type)
+                        'user_impact': self._describe_user_impact(control_type, best_clause),
+                        'mitigation_advice': self._suggest_mitigation(control_type),
+                        'clause_count': len(control_data['clauses']),
+                        'additional_examples': [c['text'][:100] + '...' for c in control_data['clauses'][1:3]]
                     }
+                    canonical_issues[canonical_id] = flag
                     all_flags.append(flag)
                     flag_categories[control_data['impact_assessment']].append(flag)
+                else:
+                    # Duplicate found - merge information
+                    existing_flag = canonical_issues[canonical_id]
+                    existing_flag['clause_count'] += len(control_data['clauses'])
+                    existing_flag['additional_examples'].extend([c['text'][:100] + '...' for c in control_data['clauses'][:2]])
+                    existing_flag['additional_examples'] = existing_flag['additional_examples'][:5]  # Limit examples
         
-        # Extract flags from structural analysis
+        # Extract flags from structural analysis with de-duplication
         for pattern_type, pattern_data in structural_analysis.get('structural_patterns_detected', {}).items():
             if pattern_data.get('detected'):
-                for clause in pattern_data['clauses']:
+                canonical_id = self._get_canonical_issue_id(pattern_type, pattern_data['damage_level'])
+                
+                if canonical_id not in canonical_issues:
+                    best_clause = self._select_best_clause_example(pattern_data['clauses'])
                     flag = {
-                        'flag_id': f"structural_{pattern_type}_{len(all_flags)}",
+                        'flag_id': canonical_id,
+                        'canonical_id': canonical_id,
                         'category': 'structural_manipulation',
                         'severity': pattern_data['damage_level'],
-                        'quoted_text': clause['context'],
-                        'explanation': self._explain_structural_flag(pattern_type, clause),
+                        'quoted_text': best_clause['context'],
+                        'explanation': self._explain_structural_flag(pattern_type, best_clause),
                         'risk_rating': self._rate_flag_risk(pattern_data['damage_level']),
-                        'user_impact': self._describe_structural_impact(pattern_type, clause),
-                        'mitigation_advice': self._suggest_structural_mitigation(pattern_type)
+                        'user_impact': self._describe_structural_impact(pattern_type, best_clause),
+                        'mitigation_advice': self._suggest_structural_mitigation(pattern_type),
+                        'clause_count': len(pattern_data['clauses']),
+                        'additional_examples': [c['context'][:100] + '...' for c in pattern_data['clauses'][1:3]]
                     }
+                    canonical_issues[canonical_id] = flag
                     all_flags.append(flag)
                     flag_categories[pattern_data['damage_level']].append(flag)
+                else:
+                    existing_flag = canonical_issues[canonical_id]
+                    existing_flag['clause_count'] += len(pattern_data['clauses'])
         
-        # Extract flags from commodification analysis
+        # Extract flags from commodification analysis with de-duplication
         for commodity_type, commodity_data in commodification_analysis.get('commodification_patterns', {}).items():
             if commodity_data.get('detected'):
-                for clause in commodity_data['clauses']:
-                    severity = self._determine_commodification_severity(commodity_data['commodification_type'])
+                severity = self._determine_commodification_severity(commodity_data['commodification_type'])
+                canonical_id = self._get_canonical_issue_id(commodity_type, severity)
+                
+                if canonical_id not in canonical_issues:
+                    best_clause = self._select_best_clause_example(commodity_data['clauses'])
                     flag = {
-                        'flag_id': f"commodity_{commodity_type}_{len(all_flags)}",
+                        'flag_id': canonical_id,
+                        'canonical_id': canonical_id,
                         'category': 'data_commodification',
                         'severity': severity,
-                        'quoted_text': clause['context'],
-                        'explanation': clause['explanation'],
+                        'quoted_text': best_clause['context'],
+                        'explanation': best_clause['explanation'],
                         'risk_rating': self._rate_flag_risk(severity),
-                        'user_impact': self._describe_commodification_impact(commodity_type, clause),
-                        'mitigation_advice': self._suggest_commodification_mitigation(commodity_type)
+                        'user_impact': self._describe_commodification_impact(commodity_type, best_clause),
+                        'mitigation_advice': self._suggest_commodification_mitigation(commodity_type),
+                        'clause_count': len(commodity_data['clauses']),
+                        'additional_examples': [c['context'][:100] + '...' for c in commodity_data['clauses'][1:3]]
                     }
+                    canonical_issues[canonical_id] = flag
                     all_flags.append(flag)
                     flag_categories[severity].append(flag)
+                else:
+                    existing_flag = canonical_issues[canonical_id]
+                    existing_flag['clause_count'] += len(commodity_data['clauses'])
         
         return {
             'total_flags': len(all_flags),
@@ -1056,7 +1094,9 @@ class PowerStructureAnalyzer:
             'medium_flag_count': len(flag_categories['medium']),
             'low_flag_count': len(flag_categories['low']),
             'flag_summary': self._generate_flag_summary(flag_categories),
-            'recommended_action': self._recommend_action_based_on_flags(flag_categories)
+            'recommended_action': self._recommend_action_based_on_flags(flag_categories),
+            'canonical_issues_count': len(canonical_issues),
+            'deduplication_performed': True
         }
     
     # Helper methods for the 5 pillars
@@ -1222,3 +1262,43 @@ class PowerStructureAnalyzer:
             return "Warning: Multiple high-risk issues, consider alternatives"
         else:
             return "Acceptable with standard precautions"
+    
+    def _get_canonical_issue_id(self, issue_type: str, severity: str) -> str:
+        """Generate canonical ID for issue types to prevent duplicates"""
+        # Map similar issues to canonical forms
+        canonical_mappings = {
+            'dispute_resolution_power': 'arbitration_mandatory',
+            'arbitration_waiver': 'arbitration_mandatory',
+            'irrevocable_arbitration': 'arbitration_mandatory',
+            'irrevocable_legal_waiver': 'arbitration_mandatory',
+            
+            'data_ownership_control': 'data_sharing_rights',
+            'data_sharing_specific': 'data_sharing_rights',
+            'data_resale_licensing': 'data_sharing_rights',
+            
+            'rule_modification_power': 'unilateral_changes',
+            'unilateral_modification': 'unilateral_changes',
+            'unilateral_term_control': 'unilateral_changes',
+            
+            'termination_power': 'account_termination',
+            'account_termination_broad': 'account_termination',
+            'consequence_obfuscation': 'account_termination',
+            
+            'forced_consent_coercion': 'forced_consent',
+            'forced_consent': 'forced_consent',
+            
+            'auto_renewal_hidden': 'auto_renewal_billing',
+            'auto_renewal': 'auto_renewal_billing'
+        }
+        
+        canonical_type = canonical_mappings.get(issue_type, issue_type)
+        return f"{canonical_type}_{severity}"
+    
+    def _select_best_clause_example(self, clauses: List[Dict]) -> Dict:
+        """Select the most representative clause example"""
+        if not clauses:
+            return {}
+        
+        # Prefer longer, more specific clauses as primary examples
+        best_clause = max(clauses, key=lambda c: len(c.get('text', c.get('context', ''))))
+        return best_clause
