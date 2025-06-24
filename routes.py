@@ -107,7 +107,37 @@ def history():
 def compare():
     """Compare multiple analyses"""
     analyses = AnalysisResult.query.order_by(AnalysisResult.created_at.desc()).limit(20).all()
-    return render_template('compare.html', analyses=analyses)
+    
+    # Calculate benchmarks
+    if analyses:
+        total_documents = len(analyses)
+        avg_risk = sum(a.risk_score for a in analyses) / total_documents
+        avg_transparency = sum(a.transparency_score for a in analyses) / total_documents
+        
+        # Calculate average readability from analysis data
+        readability_scores = []
+        for analysis in analyses:
+            data = analysis.get_analysis_data()
+            if data.get('readability_score') is not None:
+                readability_scores.append(data['readability_score'])
+        
+        avg_readability = sum(readability_scores) / len(readability_scores) if readability_scores else 0
+        
+        benchmarks = {
+            'total_documents': total_documents,
+            'average_risk_score': round(avg_risk, 1),
+            'average_transparency': round(avg_transparency, 1),
+            'average_readability': round(avg_readability, 1)
+        }
+    else:
+        benchmarks = {
+            'total_documents': 0,
+            'average_risk_score': 0,
+            'average_transparency': 0,
+            'average_readability': 0
+        }
+    
+    return render_template('compare.html', analyses=analyses, benchmarks=benchmarks)
 
 @app.route('/export/<int:result_id>')
 def export_results(result_id):
