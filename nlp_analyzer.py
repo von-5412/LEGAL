@@ -504,7 +504,7 @@ class TOSAnalyzer:
         # Generate executive summary using merged results and power analysis
         executive_summary = self._generate_executive_summary(
             risk_score, merged_risk_breakdown, dark_patterns_found, 
-            merged_positive_indicators, transparency_score, readability_metrics
+            merged_positive_indicators or {}, transparency_score, readability_metrics
         )
         
         return {
@@ -949,16 +949,24 @@ class TOSAnalyzer:
     
     def _merge_risk_results(self, pattern_results: Dict, ml_results: Dict) -> Dict:
         """Merge pattern-based and ML-based risk results"""
-        merged = pattern_results.copy()
+        merged = pattern_results.copy() if pattern_results else {}
         
+        if not ml_results:
+            return merged
+            
         for category, ml_data in ml_results.items():
+            if not isinstance(ml_data, dict):
+                continue
+                
             if category in merged:
                 # Merge counts and matches
-                merged[category]['count'] += ml_data['count']
+                merged[category]['count'] += ml_data.get('count', 0)
                 merged[category]['matches'].extend(ml_data.get('matches', []))
                 # Add ML confidence if available
                 if 'confidence_scores' in ml_data:
-                    merged[category]['ml_confidence'] = sum(ml_data['confidence_scores']) / len(ml_data['confidence_scores'])
+                    confidence_scores = ml_data['confidence_scores']
+                    if confidence_scores:
+                        merged[category]['ml_confidence'] = sum(confidence_scores) / len(confidence_scores)
             else:
                 # Add new ML-detected category
                 merged[category] = ml_data.copy()
@@ -968,14 +976,22 @@ class TOSAnalyzer:
     
     def _merge_positive_results(self, pattern_results: Dict, ml_results: Dict) -> Dict:
         """Merge pattern-based and ML-based positive indicator results"""
-        merged = pattern_results.copy()
+        merged = pattern_results.copy() if pattern_results else {}
         
+        if not ml_results:
+            return merged
+            
         for category, ml_data in ml_results.items():
+            if not isinstance(ml_data, dict):
+                continue
+                
             if category in merged:
-                merged[category]['count'] += ml_data['count']
+                merged[category]['count'] += ml_data.get('count', 0)
                 merged[category]['matches'].extend(ml_data.get('matches', []))
                 if 'confidence_scores' in ml_data:
-                    merged[category]['ml_confidence'] = sum(ml_data['confidence_scores']) / len(ml_data['confidence_scores'])
+                    confidence_scores = ml_data['confidence_scores']
+                    if confidence_scores:
+                        merged[category]['ml_confidence'] = sum(confidence_scores) / len(confidence_scores)
             else:
                 merged[category] = ml_data.copy()
                 merged[category]['source'] = 'ml_detected'
