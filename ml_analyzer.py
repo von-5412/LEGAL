@@ -284,4 +284,3 @@ class LegalMLAnalyzer:
             'positive_indicators_available': len(self.positive_indicators),
             'analysis_method': 'machine_learning' if self.model_loaded else 'advanced_patterns'
         }
-```
