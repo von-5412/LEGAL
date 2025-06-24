@@ -590,54 +590,96 @@ class TOSAnalyzer:
         return dangerous_sections[:3]
     
     def _calculate_risk_score(self, risk_breakdown: Dict) -> int:
-        """Calculate overall risk score with exponential weighting for critical issues"""
+        """Calculate overall risk score with severity-weighted critical issue enforcement"""
         total_score = 0
-        critical_multiplier = 1.0
+        critical_issues_count = 0
+        high_risk_issues_count = 0
         
-        # Critical issue categories that should trigger exponential scoring
-        critical_categories = {'data_sharing', 'arbitration_waiver'}
-        moderate_categories = {'unilateral_changes', 'account_suspension', 'broad_liability_waiver'}
+        # Severity-based scoring with much higher weights for critical issues
+        severity_weights = {
+            'critical': 35,    # Critical issues get massive weight
+            'high': 20,        # High risk issues get substantial weight  
+            'medium': 10,      # Medium issues get moderate weight
+            'low': 5           # Low issues get minimal weight
+        }
         
-        # Check for critical combinations that should auto-escalate score
-        has_arbitration = 'arbitration_waiver' in risk_breakdown and risk_breakdown['arbitration_waiver']['count'] > 0
-        has_data_sharing = 'data_sharing' in risk_breakdown and risk_breakdown['data_sharing']['count'] > 0
-        has_unilateral_changes = 'unilateral_changes' in risk_breakdown and risk_breakdown['unilateral_changes']['count'] > 0
+        # Category to severity mapping (enhanced)
+        category_severity = {
+            'data_sharing': 'critical',
+            'arbitration_waiver': 'critical',
+            'unilateral_changes': 'high',
+            'account_suspension': 'high', 
+            'account_termination': 'high',
+            'broad_liability_waiver': 'medium',
+            'liability_limitation': 'medium',
+            'consent_by_default': 'medium',
+            'auto_renewal': 'medium',
+            'hidden_costs': 'medium'
+        }
         
-        # Critical combination detection
-        if has_arbitration and (has_data_sharing or has_unilateral_changes):
-            critical_multiplier = 2.5  # Exponential escalation for dangerous combinations
-        elif has_arbitration or has_data_sharing:
-            critical_multiplier = 1.8  # High escalation for single critical issue
-        
+        # Count issues by severity and calculate weighted score
         for category, data in risk_breakdown.items():
-            base_score = data['count'] * data['weight']
+            issue_count = data['count']
+            if issue_count == 0:
+                continue
+                
+            severity = category_severity.get(category, 'medium')
+            severity_weight = severity_weights[severity]
             
-            if category in critical_categories:
-                # Exponential weighting for critical categories
-                category_score = base_score * (1.5 ** data['count'])  # Exponential growth
-                category_score = min(category_score, 60)  # Cap individual category at 60
-            elif category in moderate_categories:
-                # Linear weighting for moderate categories
-                category_score = min(base_score, data['weight'])
+            # Count issues by severity
+            if severity == 'critical':
+                critical_issues_count += issue_count
+            elif severity == 'high':
+                high_risk_issues_count += issue_count
+            
+            # Exponential scaling for multiple instances of same issue
+            if issue_count > 1:
+                category_score = severity_weight * (1 + (issue_count - 1) * 0.5)  # 50% additional for each extra
             else:
-                # Basic weighting for low-risk categories
-                category_score = min(base_score * 0.8, data['weight'] * 0.8)
+                category_score = severity_weight
             
             total_score += category_score
         
-        # Apply critical multiplier
-        total_score *= critical_multiplier
+        # Critical issue enforcement - if you have critical issues, minimum score applies
+        if critical_issues_count >= 3:
+            # 3+ critical issues = extreme danger
+            total_score = max(total_score, 85)
+        elif critical_issues_count >= 2:
+            # 2 critical issues = high danger
+            total_score = max(total_score, 75)
+        elif critical_issues_count >= 1:
+            # 1 critical issue = significant danger
+            total_score = max(total_score, 65)
+        elif high_risk_issues_count >= 4:
+            # 4+ high risk issues = accumulated danger
+            total_score = max(total_score, 60)
+        elif high_risk_issues_count >= 2:
+            # 2+ high risk issues = moderate danger
+            total_score = max(total_score, 45)
         
-        # Minimum score enforcement for critical issues
+        # Specific critical combinations that should force very high scores
+        has_arbitration = any(cat in ['arbitration_waiver'] for cat in risk_breakdown.keys() if risk_breakdown[cat]['count'] > 0)
+        has_data_sharing = any(cat in ['data_sharing'] for cat in risk_breakdown.keys() if risk_breakdown[cat]['count'] > 0)
+        
         if has_arbitration and has_data_sharing:
-            total_score = max(total_score, 80)  # Force high risk for arbitration + data sharing
+            # Arbitration + Data Sharing = Digital dictatorship
+            total_score = max(total_score, 90)
         elif has_arbitration:
-            total_score = max(total_score, 70)  # Force high risk for arbitration alone
+            # Arbitration alone = You lose legal rights
+            total_score = max(total_score, 75)
         elif has_data_sharing:
-            total_score = max(total_score, 65)  # Force medium-high risk for data sharing
+            # Data sharing alone = Privacy obliterated
+            total_score = max(total_score, 70)
         
-        # Cap at 100
-        return min(int(total_score), 100)
+        # Cap at 100 but ensure critical issues never result in low scores
+        final_score = min(int(total_score), 100)
+        
+        # Final safety check: If we detected critical issues but somehow scored low, force correction
+        if critical_issues_count > 0 and final_score < 60:
+            final_score = 60 + (critical_issues_count * 10)  # 60 base + 10 per critical issue
+            final_score = min(final_score, 100)
+        
+        return final_score
     
     def _calculate_readability(self, text: str) -> Dict:
         """Calculate readability metrics"""
@@ -833,22 +875,33 @@ class TOSAnalyzer:
         has_arbitration = any('arbitration' in issue['type'].lower() for issue in summary['critical_issues'])
         has_data_sharing = any('data' in issue['type'].lower() for issue in summary['critical_issues'])
         
-        if critical_count > 0 or risk_score >= 75:
+        # Generate assessment based on BOTH critical count AND risk score (they must align)
+        if critical_count >= 3 or risk_score >= 85:
+            summary['overall_assessment'] = f"EXTREME DANGER: {critical_count} critical issues detected - this is predatory. You lose fundamental rights."
+            summary['bottom_line'] = "🚨 AVOID AT ALL COSTS - This agreement is designed to exploit users"
+        elif critical_count >= 2 or risk_score >= 75:
             if has_arbitration and has_data_sharing:
-                summary['overall_assessment'] = f"EXTREME DANGER: Digital dictatorship detected - you lose legal rights AND data control. This is predatory."
-                summary['bottom_line'] = "🚨 AVOID AT ALL COSTS - Seek alternatives immediately"
-            elif risk_score >= 80:
-                summary['overall_assessment'] = f"DANGER: {critical_count} critical issue{'s' if critical_count != 1 else ''} found that could seriously harm you. This company is asking you to give up fundamental rights."
-                summary['bottom_line'] = "❌ DO NOT AGREE unless you fully understand and accept these major risks"
+                summary['overall_assessment'] = f"DIGITAL DICTATORSHIP: {critical_count} critical issues including arbitration + data sharing. All user power eliminated."
+                summary['bottom_line'] = "🚨 EXTREME DANGER - You lose legal rights AND data control permanently"
             else:
-                summary['overall_assessment'] = f"HIGH RISK: Critical issues detected. This agreement heavily favors the company."
-                summary['bottom_line'] = "⚠️ HIGH CAUTION - Only proceed if service is essential and no alternatives exist"
-        elif risk_score >= 60 or moderate_count > 2:
-            summary['overall_assessment'] = f"CAUTION: {moderate_count} concerning clauses found. This company prioritizes their protection over yours."
-            summary['bottom_line'] = "⚠️ PROCEED WITH CAUTION - Consider alternatives with better terms"
-        elif risk_score >= 40 or moderate_count > 0:
-            summary['overall_assessment'] = f"MIXED: {moderate_count} issue{'s' if moderate_count != 1 else ''} found, but within normal range for this type of service"
-            summary['bottom_line'] = "✓ ACCEPTABLE - Standard risks for this service type"
+                summary['overall_assessment'] = f"DANGER: {critical_count} critical issue{'s' if critical_count != 1 else ''} that eliminate fundamental user rights."
+                summary['bottom_line'] = "❌ DO NOT AGREE - Critical user rights are being stripped away"
+        elif critical_count >= 1 or risk_score >= 65:
+            if has_arbitration:
+                summary['overall_assessment'] = f"CRITICAL: Arbitration waiver detected - you lose the right to sue in court for any reason."
+                summary['bottom_line'] = "🔴 HIGH DANGER - You surrender fundamental legal protections"
+            elif has_data_sharing:
+                summary['overall_assessment'] = f"CRITICAL: Data sharing detected - your personal information will be sold/shared without meaningful consent."
+                summary['bottom_line'] = "🔴 PRIVACY RISK - Your data becomes a commodity for profit"
+            else:
+                summary['overall_assessment'] = f"HIGH RISK: {critical_count} critical issue detected that seriously undermines user rights."
+                summary['bottom_line'] = "⚠️ MAJOR CAUTION - Only proceed if absolutely necessary and no alternatives exist"
+        elif risk_score >= 45 or moderate_count > 2:
+            summary['overall_assessment'] = f"MODERATE RISK: {moderate_count} concerning clauses that favor the company over users."
+            summary['bottom_line'] = "⚠️ PROCEED WITH CAUTION - Review flagged sections carefully before agreeing"
+        elif risk_score >= 30 or moderate_count > 0:
+            summary['overall_assessment'] = f"MIXED: {moderate_count} issue{'s' if moderate_count != 1 else ''} found but within acceptable range for this service type."
+            summary['bottom_line'] = "✓ ACCEPTABLE - Standard business terms with minor concerns"
         else:
             summary['overall_assessment'] = "GOOD: No major red flags detected. This appears to be a user-friendly agreement."
             summary['bottom_line'] = "✅ SAFE TO PROCEED - This company respects user rights"
