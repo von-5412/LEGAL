@@ -850,19 +850,19 @@ class TOSAnalyzer:
             
             # Get specific impact messages for new patterns
             impact_messages = {
-                'forced_consent': "You 'agree' just by using the service - no real choice given",
-                'forced_consent_coercion': "Your consent is assumed through passive actions like scrolling",
-                'non_negotiable_terms': "Company can change rules anytime - you have no say",
-                'unilateral_term_control': "Terms can be changed unilaterally without your consent",
-                'irrevocable_arbitration': "You permanently lose the right to sue in court",
-                'irrevocable_legal_waiver': "Fundamental legal rights are permanently waived",
-                'hidden_consequences': "Severe punishments hidden in vague language",
-                'consequence_obfuscation': "Consequences for violations are deliberately unclear",
-                'auto_renewal': "Designed to trick you into recurring charges",
-                'hidden_costs': "Additional fees hidden until it's too late"
-            }
-            
-            action_messages = {
+                    'forced_consent': "You 'agree' just by using the service - no real choice given",
+                    'forced_consent_coercion': "Your consent is assumed through passive actions like scrolling",
+                    'non_negotiable_terms': "Company can change rules anytime - you have no say",
+                    'unilateral_term_control': "Terms can be changed unilaterally without your consent",
+                    'irrevocable_arbitration': "You permanently lose the right to sue in court",
+                    'irrevocable_legal_waiver': "Fundamental legal rights are permanently waived",
+                    'hidden_consequences': "Severe punishments hidden in vague language",
+                    'consequence_obfuscation': "Consequences for violations are deliberately unclear",
+                    'auto_renewal': "Designed to trick you into recurring charges",
+                    'hidden_costs': "Additional fees hidden until it's too late"
+                }
+                
+                action_messages = {
                 'forced_consent': "STOP - This is predatory consent manipulation",
                 'forced_consent_coercion': "RED FLAG - Consent should be explicit, not assumed",
                 'non_negotiable_terms': "DANGER - You have no protection from rule changes",
@@ -874,20 +874,20 @@ class TOSAnalyzer:
             }
                 
                 issue = {
-                    'type': pattern_name,
-                    'count': data['count'],
-                    'impact': impact_messages.get(pattern_type, f"Designed to manipulate users through {pattern_type.replace('_', ' ')}"),
-                    'action': action_messages.get(pattern_type, 'Be extra cautious - this is intentionally deceptive'),
-                    'severity': data.get('severity', 'moderate'),
-                    'enhanced_detection': data.get('enhanced_detection', False)
-                }
+                'type': pattern_name,
+                'count': data['count'],
+                'impact': impact_messages.get(pattern_type, f"Designed to manipulate users through {pattern_type.replace('_', ' ')}"),
+                'action': action_messages.get(pattern_type, 'Be extra cautious - this is intentionally deceptive'),
+                'severity': data.get('severity', 'moderate'),
+                'enhanced_detection': data.get('enhanced_detection', False)
+            }
                 
                 if pattern_type in critical_patterns:
-                    summary['critical_issues'].append(issue)
-                elif pattern_type in high_risk_patterns:
-                    summary['critical_issues'].append(issue)  # Treat high-risk as critical
-                else:
-                    summary['moderate_concerns'].append(issue)
+                summary['critical_issues'].append(issue)
+            elif pattern_type in high_risk_patterns:
+                summary['critical_issues'].append(issue)  # Treat high-risk as critical
+            else:
+                summary['moderate_concerns'].append(issue)
         
         # Generate overall assessment based on actual findings AND risk score alignment
         critical_count = len(summary['critical_issues'])
