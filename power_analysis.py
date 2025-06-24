@@ -373,34 +373,57 @@ class PowerStructureAnalyzer:
                 }
                 control_mechanisms.extend(detected_clauses)
         
-        # Calculate harsh but realistic power distribution
-        base_company_power = 75  # Companies inherently control the contract
+        # Calculate realistic power distribution - start with company dominance
+        base_company_power = 85  # Companies inherently dominate contracts
         
         # Harsh scaling based on power points detected
-        company_adjustment = min(20, total_company_power / 3)  # Up to 20 point increase
-        user_reduction = min(15, total_user_power / 4)  # Small reduction for user power
+        company_adjustment = min(13, total_company_power / 2)  # Up to 13 point increase for company
+        user_benefit = min(8, total_user_power / 3)  # Minimal benefit for user power clauses
         
-        company_power_percentage = min(97, base_company_power + company_adjustment)
-        user_power_percentage = max(3, 100 - company_power_percentage + user_reduction)
+        company_power_percentage = min(99, base_company_power + company_adjustment - user_benefit)
         
-        # Brutal reality check - if multiple critical controls detected
+        # Calculate user power as inverse, but be brutally realistic
+        raw_user_power = 100 - company_power_percentage
+        
+        # Apply harsh reality check - critical controls should devastate user power
         critical_controls = len([c for c in self.power_control_patterns.keys() 
                                if c in power_control_analysis and power_control_analysis[c]['detected']])
         
-        if critical_controls >= 3:  # Multiple critical controls = totalitarian
-            company_power_percentage = min(95, company_power_percentage + 8)
-            user_power_percentage = max(5, 100 - company_power_percentage)
+        # Each critical control dramatically reduces user power
+        if critical_controls >= 4:  # Four+ critical controls = digital dictatorship
+            user_power_percentage = max(1, raw_user_power * 0.1)  # 90% reduction
+            company_power_percentage = 100 - user_power_percentage
+        elif critical_controls >= 3:  # Three critical controls = totalitarian
+            user_power_percentage = max(2, raw_user_power * 0.2)  # 80% reduction  
+            company_power_percentage = 100 - user_power_percentage
         elif critical_controls >= 2:  # Two critical controls = very harsh
-            company_power_percentage = min(92, company_power_percentage + 5)
-            user_power_percentage = max(8, 100 - company_power_percentage)
+            user_power_percentage = max(4, raw_user_power * 0.4)  # 60% reduction
+            company_power_percentage = 100 - user_power_percentage
+        elif critical_controls >= 1:  # One critical control = harsh
+            user_power_percentage = max(6, raw_user_power * 0.6)  # 40% reduction
+            company_power_percentage = 100 - user_power_percentage
+        else:
+            user_power_percentage = raw_user_power
         
-        # Cap user power very harshly - most ToS are predatory
-        if user_power_percentage > 20 and total_company_power > total_user_power * 2:
-            user_power_percentage = min(20, user_power_percentage)
+        # Additional harsh reality check - if company has overwhelming power points
+        if total_company_power > total_user_power * 4:  # 4:1 ratio or worse
+            user_power_percentage = min(user_power_percentage, 8)  # Cap at 8%
+            company_power_percentage = 100 - user_power_percentage
+        elif total_company_power > total_user_power * 2:  # 2:1 ratio
+            user_power_percentage = min(user_power_percentage, 15)  # Cap at 15%
             company_power_percentage = 100 - user_power_percentage
         
-        digital_dictatorship = (company_power_percentage > 90) or (
-            company_power_percentage > 85 and total_user_power < 5
+        # Final floor - users can have virtually zero power in predatory ToS
+        if user_power_percentage < 1:
+            user_power_percentage = 1
+            company_power_percentage = 99
+        
+        # Digital dictatorship detection - much more sensitive to user powerlessness
+        digital_dictatorship = (
+            user_power_percentage <= 3 or  # Users have virtually no power
+            (company_power_percentage >= 95) or  # Company has near-total control
+            (company_power_percentage >= 90 and critical_controls >= 2) or  # High control + multiple mechanisms
+            (critical_controls >= 4)  # Four+ critical control mechanisms = automatic dictatorship
         )
         
         return {
@@ -782,16 +805,18 @@ class PowerStructureAnalyzer:
     def _get_power_assessment(self, company_percentage: float, is_dictatorship: bool) -> str:
         """Get human-readable power assessment"""
         if is_dictatorship:
-            return "🚨 TOTALITARIAN: You have virtually no rights or recourse"
-        elif company_percentage > 90:
-            return "🔴 EXTREME DANGER: Company has near-absolute control"
-        elif company_percentage > 85:
-            return "⚠️ PREDATORY: Massive power imbalance against users"
-        elif company_percentage > 80:
+            return "🚨 DIGITAL DICTATORSHIP: You have virtually no rights or recourse"
+        elif company_percentage >= 95:
+            return "🔴 TOTALITARIAN: Company has near-absolute control over everything"
+        elif company_percentage >= 90:
+            return "🔴 EXTREME DANGER: Massive power imbalance, user rights stripped"
+        elif company_percentage >= 85:
+            return "⚠️ PREDATORY: Severe disadvantage to users, avoid if possible"
+        elif company_percentage >= 80:
             return "🟠 HEAVILY SKEWED: Significant user disadvantage"
-        elif company_percentage > 75:
-            return "🟡 UNFAIR: Notable power imbalance toward company"
-        elif company_percentage > 65:
+        elif company_percentage >= 75:
+            return "🟡 CORPORATE FAVORED: Notable power imbalance toward company"
+        elif company_percentage >= 65:
             return "⚖️ UNBALANCED: Some concerning power asymmetry"
         else:
             return "✅ REASONABLE: Acceptable power distribution"
