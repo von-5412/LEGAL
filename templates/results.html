@@ -281,11 +281,11 @@
                 <h3>Document Metrics</h3>
                 <div class="row text-center">
                     <div class="col-6">
-                        <div class="h4 text-danger">{{ analysis_data.risk_breakdown|length }}</div>
+                        <div class="h4 text-danger">{{ (analysis_data.risk_breakdown|length) + (analysis_data.dark_patterns|length if analysis_data.dark_patterns else 0) }}</div>
                         <small class="text-muted">Risk Categories</small>
                     </div>
                     <div class="col-6">
-                        <div class="h4 text-warning">{{ analysis_data.power_analysis.get('structural_dark_patterns', {}).get('total_patterns_found', 0) or 0 }}</div>
+                        <div class="h4 text-warning">{{ analysis_data.dark_patterns|length if analysis_data.dark_patterns else 0 }}</div>
                         <small class="text-muted">Dark Patterns</small>
                     </div>
                 </div>
@@ -295,7 +295,7 @@
                         <small class="text-muted">Good Practices</small>
                     </div>
                     <div class="col-6">
-                        <div class="h4 text-info">{{ analysis_data.readability_score or 'N/A' }}%</div>
+                        <div class="h4 text-info">{{ analysis_data.readability_score if analysis_data.readability_score is not none else 'N/A' }}{% if analysis_data.readability_score is not none %}%{% endif %}</div>
                         <small class="text-muted">Readability</small>
                     </div>
                 </div>
