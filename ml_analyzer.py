@@ -273,6 +273,17 @@ class LegalMLAnalyzer:
             logging.error(f"ML analysis failed: {e}")
             return self._fallback_analysis()
 
+    def _fallback_analysis(self):
+        """Return basic analysis structure when ML fails"""
+        return {
+            'risk_breakdown': {},
+            'positive_indicators': {},
+            'ml_analysis': False,
+            'classification_method': 'fallback',
+            'ml_confidence_scores': {},
+            'sentences_processed': 0
+        }
+
     def get_model_info(self) -> Dict:
         """Get information about the loaded model"""
         return {
