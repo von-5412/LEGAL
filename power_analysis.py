@@ -942,13 +942,29 @@ class PowerStructureAnalyzer:
         structural_risk = self._calculate_structural_risk_weighted(structural_analysis)
         commodification_risk = commodification_analysis.get('commodification_risk_score', 0)
         
-        # Weighted combination (prioritizing highest-damage clauses)
+        # Check for critical combinations that should trigger high scores
+        is_digital_dictatorship = power_analysis.get('digital_dictatorship', False)
+        has_dispute_resolution_control = 'dispute_resolution_power' in power_analysis.get('power_control_breakdown', {})
+        has_data_ownership_control = 'data_ownership_control' in power_analysis.get('power_control_breakdown', {})
+        has_critical_commodification = commodification_risk > 60
+        
+        # Base weighted combination
         total_weighted_risk = (
             power_risk * 0.35 +           # Power imbalance is critical
             commodification_risk * 0.30 + # Data commodification is very serious
             structural_risk * 0.25 +      # Structural manipulation matters
             self._get_persona_risk_modifier(user_persona) * 0.10  # Persona-specific adjustments
         )
+        
+        # Critical escalation logic - if digital dictatorship detected, force high score
+        if is_digital_dictatorship:
+            total_weighted_risk = max(total_weighted_risk, 85)  # Digital dictatorship = critical risk
+        elif has_dispute_resolution_control and (has_data_ownership_control or has_critical_commodification):
+            total_weighted_risk = max(total_weighted_risk, 75)  # Arbitration + data control = high risk
+        elif has_dispute_resolution_control:
+            total_weighted_risk = max(total_weighted_risk, 65)  # Arbitration alone = medium-high risk
+        elif has_critical_commodification:
+            total_weighted_risk = max(total_weighted_risk, 60)  # Critical data issues = medium risk floor
         
         # Overall risk assessment
         risk_level = self._determine_risk_level(total_weighted_risk)
@@ -963,7 +979,8 @@ class PowerStructureAnalyzer:
                 'commodification_risk': round(commodification_risk, 1)
             },
             'high_damage_clauses': self._identify_high_damage_clauses(power_analysis, structural_analysis, commodification_analysis),
-            'critical_issues': self._identify_critical_issues_weighted(power_analysis, structural_analysis, commodification_analysis)
+            'critical_issues': self._identify_critical_issues_weighted(power_analysis, structural_analysis, commodification_analysis),
+            'escalation_triggered': is_digital_dictatorship or (has_dispute_resolution_control and has_data_ownership_control)
         }
     
     def _generate_explanatory_flags(self, text: str, sentences: List[str], power_analysis: Dict,
@@ -1094,14 +1111,14 @@ class PowerStructureAnalyzer:
         return modifiers.get(persona, 10)
     
     def _determine_risk_level(self, score: float) -> str:
-        if score >= 80: return "critical"
+        if score >= 75: return "critical"  # Lowered threshold for critical
         elif score >= 60: return "high"
         elif score >= 40: return "medium"
         else: return "low"
     
     def _get_risk_assessment(self, score: float) -> str:
-        if score >= 80: return "Critical Risk - Avoid if possible"
-        elif score >= 60: return "High Risk - Proceed with extreme caution"
+        if score >= 75: return "Critical Risk - Avoid if possible"
+        elif score >= 60: return "High Risk - Proceed with extreme caution" 
         elif score >= 40: return "Moderate Risk - Review carefully"
         else: return "Acceptable Risk - Standard precautions apply"
     
