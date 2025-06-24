@@ -146,11 +146,11 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ url_for('results', analysis_id=analysis.id) }}" 
+                                    <a href="{{ url_for('results', result_id=analysis.id) }}" 
                                        class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ url_for('export_analysis', analysis_id=analysis.id) }}" 
+                                    <a href="{{ url_for('export_results', result_id=analysis.id) }}" 
                                        class="btn btn-outline-secondary btn-sm">
                                         <i class="fas fa-download"></i>
                                     </a>
