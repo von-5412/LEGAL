@@ -35,7 +35,7 @@
                     <i class="fas fa-balance-scale text-danger"></i>
                     Power Structure Analysis
                 </h3>
-                
+
                 <div class="row">
                     <div class="col-lg-6">
                         <div class="card border-{{ 'danger' if analysis_data.power_analysis.overall_assessment.risk_level == 'critical' else 'warning' if analysis_data.power_analysis.overall_assessment.risk_level == 'high' else 'primary' }}">
@@ -60,19 +60,19 @@
                                         <small class="text-muted">Rights Balance</small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.power_distribution.company_power_percentage > 75 else 'warning' if analysis_data.power_analysis.power_distribution.company_power_percentage > 50 else 'success' }}">
+                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.power_distribution.company_power_percentage > 75 else 'warning if analysis_data.power_analysis.power_distribution.company_power_percentage > 50 else 'success' }}">
                                             {{ "%.0f"|format(analysis_data.power_analysis.power_distribution.company_power_percentage) }}%
                                         </div>
                                         <small class="text-muted">Company Control</small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.structural_dark_patterns.friction_score > 15 else 'warning' if analysis_data.power_analysis.structural_dark_patterns.friction_score > 8 else 'success' }}">
-                                            {{ analysis_data.power_analysis.structural_dark_patterns.friction_score }}
+                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.get('structural_dark_patterns', {}).get('friction_score', 0) > 15 else 'warning' if analysis_data.power_analysis.get('structural_dark_patterns', {}).get('friction_score', 0) > 8 else 'success' }}">
+                                            {{ analysis_data.power_analysis.get('structural_dark_patterns', {}).get('friction_score', 0) }}
                                         </div>
                                         <small class="text-muted">Friction Score</small>
                                     </div>
                                 </div>
-                                
+
                                 {% if analysis_data.power_analysis.power_distribution.digital_dictatorship %}
                                 <div class="alert alert-danger mt-3 mb-0">
                                     <i class="fas fa-exclamation-triangle me-2"></i>
@@ -82,7 +82,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-6">
                         <div class="card h-100">
                             <div class="card-header">
@@ -101,7 +101,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 {% if analysis_data.power_analysis.explanatory_flags and analysis_data.power_analysis.explanatory_flags.critical_flag_count > 0 %}
                 <div class="alert alert-danger mt-3">
                     <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Critical Issues Detected</h6>
@@ -113,7 +113,7 @@
                     {% endfor %}
                 </div>
                 {% endif %}
-                
+
                 {% if analysis_data.power_analysis.overall_assessment.critical_issues %}
                 <div class="alert alert-warning mt-3">
                     <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Critical Power Issues</h6>
@@ -137,7 +137,7 @@
                     <i class="fas fa-chart-line text-primary"></i>
                     Executive Summary
                 </h3>
-                
+
                 <div class="row">
                     <div class="col-lg-8">
                         {% if analysis_data.executive_summary %}
@@ -147,7 +147,7 @@
                                 {{ analysis_data.executive_summary.bottom_line }}
                             </div>
                         </div>
-                        
+
                         {% if analysis_data.executive_summary.critical_issues %}
                         <div class="alert alert-danger mb-3">
                             <h6 class="alert-heading"><i class="fas fa-ban me-2"></i>CRITICAL ISSUES - Take Action Immediately</h6>
@@ -160,7 +160,7 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        
+
                         {% if analysis_data.executive_summary.moderate_concerns %}
                         <div class="alert alert-warning mb-3">
                             <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>CONCERNS - Review Carefully</h6>
@@ -188,7 +188,7 @@
                         </div>
                         {% endif %}
                     </div>
-                    
+
                     <div class="col-lg-4">
                         {% if analysis_data.executive_summary %}
                         <div class="card border-danger mb-3">
@@ -206,7 +206,7 @@
                                 </ul>
                             </div>
                         </div>
-                        
+
                         {% if analysis_data.executive_summary.next_steps %}
                         <div class="card border-info">
                             <div class="card-header bg-info text-white">
@@ -285,7 +285,7 @@
                         <small class="text-muted">Risk Categories</small>
                     </div>
                     <div class="col-6">
-                        <div class="h4 text-warning">{{ analysis_data.power_analysis.structural_dark_patterns.total_patterns_found or 0 }}</div>
+                        <div class="h4 text-warning">{{ analysis_data.power_analysis.get('structural_dark_patterns', {}).get('total_patterns_found', 0) or 0 }}</div>
                         <small class="text-muted">Dark Patterns</small>
                     </div>
                 </div>
@@ -311,7 +311,7 @@
                             <div class="small text-muted">{{ analysis_data.complex_words_ratio }}% complex</div>
                         </div>
                     </div>
-                    
+
                     {% if analysis_data.ml_analysis_info %}
                     <div class="mt-3 pt-2 border-top">
                         <div class="small text-muted">
@@ -337,13 +337,13 @@
                     <i class="fas fa-exclamation-triangle text-danger"></i>
                     Risk Breakdown
                 </h3>
-                
+
                 {% if analysis_data.risk_breakdown %}
                     <div class="chart-container mb-3">
                         <canvas id="breakdown-chart" 
                                 data-risks='{{ analysis_data.risk_breakdown|tojson }}'></canvas>
                     </div>
-                    
+
                     {% for category, data in analysis_data.risk_breakdown.items() %}
                     <div class="risk-item">
                         <div class="risk-item-info">
@@ -380,13 +380,13 @@
                     <i class="fas fa-eye text-warning"></i>
                     Dark Patterns Detected
                 </h3>
-                
+
                 {% if analysis_data.dark_patterns %}
                     <div class="chart-container mb-3">
                         <canvas id="dark-patterns-chart" 
                                 data-patterns='{{ analysis_data.dark_patterns|tojson }}'></canvas>
                     </div>
-                    
+
                     {% for pattern_type, data in analysis_data.dark_patterns.items() %}
                     <div class="dark-pattern-item">
                         <h4>{{ pattern_type.replace('_', ' ').title() }}
@@ -420,7 +420,7 @@
                     <i class="fas fa-thumbs-up text-success"></i>
                     Good Practices Found
                 </h3>
-                
+
                 {% for indicator_type, data in analysis_data.positive_indicators.items() %}
                 <div class="positive-indicator-item">
                     <h4>{{ indicator_type.replace('_', ' ').title() }}
@@ -438,7 +438,7 @@
                     </div>
                 </div>
                 {% endfor %}
-                
+
                 <div class="alert alert-success mt-3">
                     <small>
                         <i class="fas fa-info-circle"></i>
@@ -456,21 +456,21 @@
                     <i class="fas fa-flag text-danger"></i>
                     Flagged Sections
                 </h3>
-                
+
                 {% if analysis_data.flagged_sections %}
                     <p class="text-muted mb-3">
                         The following sections contain potentially problematic clauses:
                     </p>
-                    
+
                     {% for section in analysis_data.flagged_sections %}
                     <div class="flagged-section">
                         <div class="flagged-section-header">
                             <h4 class="mb-0">Section {{ loop.index }}</h4>
                             <span class="flag-count">{{ section.flag_count }} issue{{ 's' if section.flag_count != 1 else '' }}</span>
                         </div>
-                        
+
                         <div class="section-text">{{ section.text }}</div>
-                        
+
                         <div class="flagged-section-content">
                             <h5 class="h6 mb-2">Issues Found:</h5>
                             <ul class="flag-list">
@@ -501,7 +501,7 @@
     </div>
 
     <!-- Risk-Specific Guidance -->
-    {% if analysis_data.risk_breakdown or analysis_data.power_analysis.structural_dark_patterns.structural_patterns_detected %}
+    {% if analysis_data.risk_breakdown or analysis_data.power_analysis.get('structural_dark_patterns', {}).get('structural_patterns_detected',{}) %}
     <div class="row mt-4">
         <div class="col-12">
             <div class="analysis-card">
@@ -509,7 +509,7 @@
                     <i class="fas fa-shield-alt text-warning"></i>
                     Risk-Specific Protection Guide
                 </h3>
-                
+
                 <div class="row">
                     {% if 'data_sharing' in analysis_data.risk_breakdown %}
                     <div class="col-lg-6 mb-3">
@@ -529,7 +529,7 @@
                         </div>
                     </div>
                     {% endif %}
-                    
+
                     {% if 'arbitration_waiver' in analysis_data.risk_breakdown %}
                     <div class="col-lg-6 mb-3">
                         <div class="alert alert-danger">
@@ -548,8 +548,8 @@
                         </div>
                     </div>
                     {% endif %}
-                    
-                    {% if 'exit_friction' in (analysis_data.power_analysis.structural_dark_patterns.structural_patterns_detected or {}) %}
+
+                    {% if 'exit_friction' in (analysis_data.power_analysis.get('structural_dark_patterns', {}).get('structural_patterns_detected', {})) %}
                     <div class="col-lg-6 mb-3">
                         <div class="alert alert-warning">
                             <h6 class="alert-heading">
@@ -567,7 +567,7 @@
                         </div>
                     </div>
                     {% endif %}
-                    
+
                     {% if 'unilateral_changes' in analysis_data.risk_breakdown %}
                     <div class="col-lg-6 mb-3">
                         <div class="alert alert-warning">
