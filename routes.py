@@ -75,11 +75,10 @@ def upload_file():
         result = AnalysisResult(
             filename=filename,
             file_hash=file_hash,
-            file_size=len(file_content),
-            risk_score=analysis_results['risk_score'],
-            transparency_score=analysis_results['transparency_score'],
-            analysis_data=analysis_results
+            risk_score=analysis_results.get('risk_score', 0),
+            transparency_score=analysis_results.get('transparency_score', 0)
         )
+        result.set_analysis_data(analysis_results)
         
         db.session.add(result)
         db.session.commit()
@@ -96,7 +95,7 @@ def upload_file():
 def results(result_id):
     """Display analysis results"""
     analysis = AnalysisResult.query.get_or_404(result_id)
-    return render_template('results.html', analysis=analysis, analysis_data=analysis.analysis_data)
+    return render_template('results.html', analysis=analysis, analysis_data=analysis.get_analysis_data())
 
 @app.route('/history')
 def history():
@@ -118,10 +117,9 @@ def export_results(result_id):
     export_data = {
         'filename': analysis.filename,
         'analysis_date': analysis.created_at.isoformat(),
-        'file_size': analysis.file_size,
         'risk_score': analysis.risk_score,
         'transparency_score': analysis.transparency_score,
-        'analysis_results': analysis.analysis_data
+        'analysis_results': analysis.get_analysis_data()
     }
     
     return jsonify(export_data)

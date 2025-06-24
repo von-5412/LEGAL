@@ -307,7 +307,7 @@ class PowerStructureAnalyzer:
             'rights_violations': rights_violations,
             'total_severity_score': total_severity,
             'rights_vs_control_balance': rights_score,
-            'categories_detected': categories_detected,
+            'categories_detected': list(categories_detected),
             'red_flag_triggered': rights_score < 4,
             'persona_risk_assessment': self._get_persona_risk_assessment(user_persona, rights_violations)
         }
