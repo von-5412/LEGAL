@@ -502,10 +502,22 @@ class TOSAnalyzer:
         power_analysis = self.power_analyzer.analyze_power_structure(text, user_persona='individual_user')
         
         # Generate executive summary using merged results and power analysis
-        executive_summary = self._generate_executive_summary(
-            risk_score, merged_risk_breakdown, dark_patterns_found, 
-            merged_positive_indicators or {}, transparency_score, readability_metrics
-        )
+        try:
+            executive_summary = self._generate_executive_summary(
+                risk_score, merged_risk_breakdown, dark_patterns_found, 
+                merged_positive_indicators or {}, transparency_score, readability_metrics
+            )
+        except Exception as e:
+            logging.error(f"Error generating executive summary: {e}")
+            executive_summary = {
+                'overall_assessment': 'Analysis completed with limited summary due to processing error',
+                'critical_issues': [],
+                'moderate_concerns': [],
+                'immediate_actions': ['Review the flagged sections manually'],
+                'next_steps': ['Consider getting legal advice for complex terms'],
+                'risk_level': 'medium',
+                'bottom_line': 'Manual review recommended due to analysis error'
+            }
         
         return {
             'risk_score': risk_score,
@@ -753,6 +765,11 @@ class TOSAnalyzer:
     def _generate_executive_summary(self, risk_score, risk_breakdown, dark_patterns, 
                                    positive_indicators, transparency_score, readability_metrics):
         """Generate an executive summary of the analysis"""
+        # Ensure all inputs are properly initialized
+        risk_breakdown = risk_breakdown or {}
+        dark_patterns = dark_patterns or {}
+        positive_indicators = positive_indicators or {}
+        
         summary = {
             'overall_assessment': '',
             'critical_issues': [],
@@ -794,15 +811,18 @@ class TOSAnalyzer:
         
         # Categorize issues by severity
         for risk_type, data in risk_breakdown.items():
+            if not isinstance(data, dict):
+                continue
+                
             risk_info = risk_impacts.get(risk_type, {
                 'severity': 'moderate',
-                'impact': data['description'],
+                'impact': data.get('description', f'Risk detected: {risk_type}'),
                 'action': 'Review this clause carefully'
             })
             
             issue = {
                 'type': risk_type.replace('_', ' ').title(),
-                'count': data['count'],
+                'count': data.get('count', 0),
                 'impact': risk_info['impact'],
                 'action': risk_info['action']
             }
@@ -823,11 +843,13 @@ class TOSAnalyzer:
         ]
         
         for pattern_type, data in dark_patterns.items():
-            if data['count'] > 0:  # Changed from > 1 to > 0 to catch single instances
-                pattern_name = pattern_type.replace('_', ' ').title()
+            if not isinstance(data, dict) or data.get('count', 0) == 0:
+                continue
                 
-                # Get specific impact messages for new patterns
-                impact_messages = {
+            pattern_name = pattern_type.replace('_', ' ').title()
+            
+            # Get specific impact messages for new patterns
+            impact_messages = {
                     'forced_consent': "You 'agree' just by using the service - no real choice given",
                     'forced_consent_coercion': "Your consent is assumed through passive actions like scrolling",
                     'non_negotiable_terms': "Company can change rules anytime - you have no say",
