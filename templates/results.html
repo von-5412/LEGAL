@@ -60,7 +60,7 @@
                                         <small class="text-muted">Rights Balance</small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.power_distribution.company_power_percentage > 75 else 'warning if analysis_data.power_analysis.power_distribution.company_power_percentage > 50 else 'success' }}">
+                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.power_distribution.company_power_percentage > 75 else 'warning' if analysis_data.power_analysis.power_distribution.company_power_percentage > 50 else 'success' }}">
                                             {{ "%.0f"|format(analysis_data.power_analysis.power_distribution.company_power_percentage) }}%
                                         </div>
                                         <small class="text-muted">Company Control</small>
