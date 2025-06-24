@@ -522,7 +522,7 @@
     </div>
 
     <!-- Risk-Specific Guidance -->
-    {% if analysis_data.risk_breakdown or analysis_data.power_analysis.get('structural_dark_patterns', {}).get('structural_patterns_detected',{}) %}
+    {% if analysis_data.risk_breakdown or analysis_data.dark_patterns or analysis_data.power_analysis %}
     <div class="row mt-4">
         <div class="col-12">
             <div class="analysis-card">
@@ -532,7 +532,11 @@
                 </h3>
 
                 <div class="row">
-                    {% if 'data_sharing' in analysis_data.risk_breakdown %}
+                    {% set has_guidance = false %}
+                    
+                    <!-- Data Sharing Protection -->
+                    {% if 'data_sharing' in analysis_data.risk_breakdown or 'data_sharing_specific' in analysis_data.risk_breakdown or 'data_ownership_control' in (analysis_data.power_analysis.get('power_control_breakdown', {})) %}
+                    {% set has_guidance = true %}
                     <div class="col-lg-6 mb-3">
                         <div class="alert alert-danger">
                             <h6 class="alert-heading">
@@ -551,7 +555,9 @@
                     </div>
                     {% endif %}
 
-                    {% if 'arbitration_waiver' in analysis_data.risk_breakdown %}
+                    <!-- Arbitration Protection -->
+                    {% if 'arbitration_waiver' in analysis_data.risk_breakdown or 'irrevocable_arbitration' in analysis_data.risk_breakdown or 'dispute_resolution_power' in (analysis_data.power_analysis.get('power_control_breakdown', {})) %}
+                    {% set has_guidance = true %}
                     <div class="col-lg-6 mb-3">
                         <div class="alert alert-danger">
                             <h6 class="alert-heading">
@@ -570,7 +576,9 @@
                     </div>
                     {% endif %}
 
-                    {% if 'exit_friction' in (analysis_data.power_analysis.get('structural_dark_patterns', {}).get('structural_patterns_detected', {})) %}
+                    <!-- Auto-Renewal Protection -->
+                    {% if 'auto_renewal' in analysis_data.dark_patterns or 'exit_friction' in (analysis_data.power_analysis.get('structural_dark_patterns', {}).get('structural_patterns_detected', {})) or 'auto_renewal_hidden' in analysis_data.dark_patterns %}
+                    {% set has_guidance = true %}
                     <div class="col-lg-6 mb-3">
                         <div class="alert alert-warning">
                             <h6 class="alert-heading">
@@ -589,7 +597,9 @@
                     </div>
                     {% endif %}
 
-                    {% if 'unilateral_changes' in analysis_data.risk_breakdown %}
+                    <!-- Unilateral Changes Protection -->
+                    {% if 'unilateral_changes' in analysis_data.risk_breakdown or 'unilateral_modification' in analysis_data.risk_breakdown or 'rule_modification_power' in (analysis_data.power_analysis.get('power_control_breakdown', {})) %}
+                    {% set has_guidance = true %}
                     <div class="col-lg-6 mb-3">
                         <div class="alert alert-warning">
                             <h6 class="alert-heading">
@@ -603,6 +613,68 @@
                                 <li>Set Google Alerts for "[company name] terms update"</li>
                                 <li>Check terms monthly if service is important</li>
                                 <li>Know your exit strategy before changes happen</li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Account Termination Protection -->
+                    {% if 'account_termination' in analysis_data.risk_breakdown or 'account_termination_broad' in analysis_data.risk_breakdown or 'termination_power' in (analysis_data.power_analysis.get('power_control_breakdown', {})) %}
+                    {% set has_guidance = true %}
+                    <div class="col-lg-6 mb-3">
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-user-times"></i>
+                                They Can Ban You Anytime
+                            </h6>
+                            <div class="mb-2"><strong>What this means:</strong> They can shut down your account without warning or explanation.</div>
+                            <div class="mb-2"><strong>Protect yourself:</strong></div>
+                            <ul class="mb-0 small">
+                                <li>Backup all important data regularly</li>
+                                <li>Don't rely on this service for critical business</li>
+                                <li>Have alternative services ready</li>
+                                <li>Keep local copies of everything important</li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- AI Training Protection -->
+                    {% if analysis_data.power_analysis.get('data_commodification', {}).get('ai_training_detected') %}
+                    {% set has_guidance = true %}
+                    <div class="col-lg-6 mb-3">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-robot"></i>
+                                Your Data Trains Their AI
+                            </h6>
+                            <div class="mb-2"><strong>What this means:</strong> Your content is being used to train AI models without compensation.</div>
+                            <div class="mb-2"><strong>Protect yourself:</strong></div>
+                            <ul class="mb-0 small">
+                                <li>Avoid sharing sensitive or proprietary content</li>
+                                <li>Use generic examples instead of real data</li>
+                                <li>Check if there's an opt-out option</li>
+                                <li>Consider AI-free alternatives</li>
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- If no specific guidance found, show general advice -->
+                    {% if not has_guidance %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle"></i>
+                                General Protection Tips
+                            </h6>
+                            <div class="mb-2"><strong>Even with standard terms, protect yourself:</strong></div>
+                            <ul class="mb-0">
+                                <li>Save a copy of these terms before agreeing</li>
+                                <li>Set up data export/backup procedures</li>
+                                <li>Review your account settings for privacy options</li>
+                                <li>Check for notification preferences for policy changes</li>
+                                <li>Understand the cancellation process before you need it</li>
                             </ul>
                         </div>
                     </div>
