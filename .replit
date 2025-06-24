@@ -7,3 +7,15 @@ packages = ["glibcLocales"]
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[workflows]
+runButton = "Run TOS Analyzer"
+
+[[workflows.workflow]]
+name = "Run TOS Analyzer"
+author = 39957545
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
