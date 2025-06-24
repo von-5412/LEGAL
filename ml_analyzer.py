@@ -253,18 +253,18 @@ class LegalMLAnalyzer:
                 enhanced_analyzer = EnhancedPatternAnalyzer()
                 result = enhanced_analyzer.analyze_with_enhanced_patterns(text)
                 # Ensure result is properly structured
-                if isinstance(result, dict):
+                if isinstance(result, dict) and all(key in result for key in ['risk_breakdown', 'positive_indicators']):
                     return result
                 else:
                     return self._fallback_analysis()
-            except ImportError:
-                logging.warning("Enhanced pattern analyzer not available either")
+            except (ImportError, AttributeError) as e:
+                logging.warning(f"Enhanced pattern analyzer not available: {e}")
                 return self._fallback_analysis()
 
         try:
             if not self.model_loaded:
-                success = self.load_model()
-                if not success:
+                self.load_model()
+                if not self.model_loaded:
                     return self._fallback_analysis()
 
             return self._perform_ml_analysis(text)
@@ -283,6 +283,61 @@ class LegalMLAnalyzer:
             'ml_confidence_scores': {},
             'sentences_processed': 0
         }
+
+    def _perform_ml_analysis(self, text: str) -> Dict:
+        """Perform actual ML-based analysis when model is loaded"""
+        sentences = self._split_into_sentences(text)
+        risk_breakdown = {}
+        positive_indicators = {}
+        ml_confidence_scores = {}
+        
+        for sentence in sentences:
+            classifications = self._classify_sentence_ml(sentence)
+            
+            for category, classification_data in classifications.items():
+                if classification_data['type'] == 'risk':
+                    if category not in risk_breakdown:
+                        risk_breakdown[category] = {
+                            'count': 0,
+                            'matches': [],
+                            'confidence_scores': []
+                        }
+                    risk_breakdown[category]['count'] += 1
+                    risk_breakdown[category]['confidence_scores'].append(classification_data['confidence'])
+                    risk_breakdown[category]['matches'].append({
+                        'text': sentence[:100] + '...' if len(sentence) > 100 else sentence,
+                        'confidence': classification_data['confidence']
+                    })
+                    
+                elif classification_data['type'] == 'positive':
+                    clean_category = category.replace('positive_', '')
+                    if clean_category not in positive_indicators:
+                        positive_indicators[clean_category] = {
+                            'count': 0,
+                            'matches': [],
+                            'confidence_scores': []
+                        }
+                    positive_indicators[clean_category]['count'] += 1
+                    positive_indicators[clean_category]['confidence_scores'].append(classification_data['confidence'])
+                    positive_indicators[clean_category]['matches'].append({
+                        'text': sentence[:100] + '...' if len(sentence) > 100 else sentence,
+                        'confidence': classification_data['confidence']
+                    })
+        
+        return {
+            'risk_breakdown': risk_breakdown,
+            'positive_indicators': positive_indicators,
+            'ml_analysis': True,
+            'classification_method': 'machine_learning',
+            'ml_confidence_scores': ml_confidence_scores,
+            'sentences_processed': len(sentences)
+        }
+    
+    def _split_into_sentences(self, text: str) -> List[str]:
+        """Split text into sentences for analysis"""
+        import re
+        sentences = re.split(r'[.!?]+', text)
+        return [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
 
     def get_model_info(self) -> Dict:
         """Get information about the loaded model"""
