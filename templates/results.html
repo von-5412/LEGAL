@@ -60,20 +60,20 @@
                                         <small class="text-muted">Rights Balance</small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.power_distribution.company_control_percentage > 75 else 'warning' if analysis_data.power_analysis.power_distribution.company_control_percentage > 50 else 'success' }}">
-                                            {{ "%.0f"|format(analysis_data.power_analysis.power_distribution.company_control_percentage) }}%
+                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.power_distribution.company_power_percentage > 75 else 'warning' if analysis_data.power_analysis.power_distribution.company_power_percentage > 50 else 'success' }}">
+                                            {{ "%.0f"|format(analysis_data.power_analysis.power_distribution.company_power_percentage) }}%
                                         </div>
                                         <small class="text-muted">Company Control</small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.structural_dark_patterns.total_friction_score > 15 else 'warning' if analysis_data.power_analysis.structural_dark_patterns.total_friction_score > 8 else 'success' }}">
-                                            {{ analysis_data.power_analysis.structural_dark_patterns.total_friction_score }}
+                                        <div class="h4 text-{{ 'danger' if analysis_data.power_analysis.structural_dark_patterns.friction_score > 15 else 'warning' if analysis_data.power_analysis.structural_dark_patterns.friction_score > 8 else 'success' }}">
+                                            {{ analysis_data.power_analysis.structural_dark_patterns.friction_score }}
                                         </div>
                                         <small class="text-muted">Friction Score</small>
                                     </div>
                                 </div>
                                 
-                                {% if analysis_data.power_analysis.power_distribution.is_digital_dictatorship %}
+                                {% if analysis_data.power_analysis.power_distribution.digital_dictatorship %}
                                 <div class="alert alert-danger mt-3 mb-0">
                                     <i class="fas fa-exclamation-triangle me-2"></i>
                                     <strong>Digital Dictatorship Detected:</strong> You're signing away fundamental user rights and legal protections.
